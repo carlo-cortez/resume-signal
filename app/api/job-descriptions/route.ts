@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getSupabaseAdmin } from "@/db/supabase";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 type StoredJobDescription = {
   id: string;
@@ -14,18 +14,26 @@ type StoredJobDescription = {
 
 export async function GET() {
   try {
-    const supabase = getSupabaseAdmin();
+    const supabase = await createSupabaseServerClient();
+    const { data: identity, error: authError } = await supabase.auth.getClaims();
+    const userId = identity?.claims?.sub;
+
+    if (authError || !userId) {
+      return NextResponse.json({ error: "Authentication required." }, { status: 401 });
+    }
+
     const { data, error } = await supabase
       .from("job_descriptions")
       .select("id, company, title, role_category, keywords_json, match_score, outcome, created_at")
+      .eq("user_id", userId)
       .order("created_at", { ascending: false })
       .limit(100);
 
     if (error) throw error;
     return NextResponse.json({ items: data ?? [] });
-  } catch (error) {
+  } catch {
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Unable to load saved job descriptions." },
+      { error: "Unable to load saved job descriptions." },
       { status: 503 },
     );
   }
@@ -41,7 +49,9 @@ export async function POST(request: Request) {
     const keywords = Array.isArray(body.keywords)
       ? body.keywords.filter((value): value is string => typeof value === "string")
       : [];
-    const matchScore = typeof body.matchScore === "number" ? Math.round(body.matchScore) : null;
+    const matchScore = typeof body.matchScore === "number"
+      ? Math.min(100, Math.max(0, Math.round(body.matchScore)))
+      : null;
 
     if (!rawText || !title || !roleCategory) {
       return NextResponse.json(
@@ -50,10 +60,18 @@ export async function POST(request: Request) {
       );
     }
 
-    const supabase = getSupabaseAdmin();
+    const supabase = await createSupabaseServerClient();
+    const { data: identity, error: authError } = await supabase.auth.getClaims();
+    const userId = identity?.claims?.sub;
+
+    if (authError || !userId) {
+      return NextResponse.json({ error: "Authentication required." }, { status: 401 });
+    }
+
     const { data, error } = await supabase
       .from("job_descriptions")
       .insert({
+        user_id: userId,
         company: company || null,
         title,
         role_category: roleCategory,
@@ -67,9 +85,9 @@ export async function POST(request: Request) {
 
     if (error) throw error;
     return NextResponse.json(data, { status: 201 });
-  } catch (error) {
+  } catch {
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Unable to save this job description." },
+      { error: "Unable to save this job description." },
       { status: 503 },
     );
   }

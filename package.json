@@ -13,6 +13,7 @@
     "lint": "eslint . --ignore-pattern .next --ignore-pattern dist --ignore-pattern .vinext --ignore-pattern .wrangler"
   },
   "dependencies": {
+    "@supabase/ssr": "^0.12.3",
     "@supabase/supabase-js": "^2.110.7",
     "next": "16.2.6",
     "react": "19.2.6",

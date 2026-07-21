@@ -267,9 +267,14 @@ export default function Home() {
             <small>ATS fit, without the guesswork</small>
           </span>
         </a>
-        <div className="header-meta">
-          <span className="status-dot" aria-hidden="true" />
-          <span>{hasScanned ? "Scan ready" : "Private workspace"}</span>
+        <div className="header-actions">
+          <div className="header-meta">
+            <span className="status-dot" aria-hidden="true" />
+            <span>{hasScanned ? "Scan ready" : "Secure workspace"}</span>
+          </div>
+          <form action="/auth/signout" method="post">
+            <button className="signout-button" type="submit">Sign out</button>
+          </form>
         </div>
       </header>
 
