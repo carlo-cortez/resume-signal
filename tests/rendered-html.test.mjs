@@ -17,6 +17,9 @@ test("defines the finished Resume Signal product surface", async () => {
   assert.match(page, /Scan & build/);
   assert.match(page, /JD library/);
   assert.match(page, /Harvard-style resume/);
+  assert.match(page, /Taylor Rivera/);
+  assert.match(page, /Sample Technology Company/);
+  assert.doesNotMatch(page, /Carlo Reyes|Philippine Airlines|De La Salle University|DLSU|Makati City/);
   assert.match(layout, /ATS Resume Builder/);
   assert.match(stylesheet, /@media \(max-width: 540px\)/);
   assert.match(packageJson, /"dev": "next dev"/);

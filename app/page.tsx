@@ -121,10 +121,10 @@ const roleProfiles: RoleProfile[] = [
       { term: "SQL", frequency: 25 },
     ],
     postings: [
-      { company: "Macquarie", role: "Reporting & Analytics BA", date: "Jul 12", outcome: "interview" },
-      { company: "Accenture", role: "Business Technology Analyst", date: "Jul 08", outcome: "applied" },
-      { company: "IBM", role: "Process Transformation Analyst", date: "Jun 28", outcome: "applied" },
-      { company: "ING", role: "Business Analyst", date: "Jun 18", outcome: "closed" },
+      { company: "Northstar Bank", role: "Reporting & Analytics BA", date: "Jul 12", outcome: "interview" },
+      { company: "Brightpath Consulting", role: "Business Technology Analyst", date: "Jul 08", outcome: "applied" },
+      { company: "Atlas Systems", role: "Process Transformation Analyst", date: "Jun 28", outcome: "applied" },
+      { company: "Harbor Finance", role: "Business Analyst", date: "Jun 18", outcome: "closed" },
     ],
   },
   {
@@ -140,8 +140,8 @@ const roleProfiles: RoleProfile[] = [
       { term: "Fintech", frequency: 50 },
     ],
     postings: [
-      { company: "GCash", role: "Associate Product Owner", date: "Jul 02", outcome: "applied" },
-      { company: "Maya", role: "Product Owner", date: "Jun 20", outcome: "closed" },
+      { company: "PocketPay", role: "Associate Product Owner", date: "Jul 02", outcome: "applied" },
+      { company: "Nova Wallet", role: "Product Owner", date: "Jun 20", outcome: "closed" },
     ],
   },
   {
@@ -157,7 +157,7 @@ const roleProfiles: RoleProfile[] = [
       { term: "DAX", frequency: 100 },
     ],
     postings: [
-      { company: "JPMorgan", role: "Reporting Analyst", date: "Jun 10", outcome: "applied" },
+      { company: "Summit Financial", role: "Reporting Analyst", date: "Jun 10", outcome: "applied" },
     ],
   },
 ];
@@ -333,7 +333,7 @@ export default function Home() {
               <div className="metadata-row">
                 <label>
                   <span>Company</span>
-                  <input value={company} onChange={(event) => setCompany(event.target.value)} placeholder="e.g. Macquarie" />
+                  <input value={company} onChange={(event) => setCompany(event.target.value)} placeholder="e.g. Northstar Bank" />
                 </label>
                 <label>
                   <span>Role category</span>
@@ -440,32 +440,32 @@ export default function Home() {
               </button>
             </div>
             <div className="paper">
-              <div className="resume-name">Carlo Reyes</div>
-              <p className="contact">Makati City, Philippines · carlo.reyes@email.com · linkedin.com/in/carloreyes</p>
+              <div className="resume-name">Taylor Rivera</div>
+              <p className="contact">Metro Manila, Philippines · sample.candidate@example.com · linkedin.com/in/sample-profile</p>
 
               <ResumeSection title="Experience">
-                <ResumeRole title="Systems Analyst" date="Jun 2023 – Present" company="Philippine Airlines · Makati City">
-                  <li>Gathered and documented <mark>requirements</mark> from cross-functional <mark>stakeholders</mark> to define system workflows and enhancements.</li>
-                  <li>Led <mark>UAT</mark> cycles for airline systems, coordinating test plans and resolving defects before release.</li>
-                  <li>Built <mark>Power BI</mark> dashboards to track operational metrics for leadership review.</li>
-                  <li>Automated recurring processes using workflow automation tools, reducing turnaround time.</li>
-                  <li>Wrote and optimized <mark>SQL</mark> queries to support reporting and data validation.</li>
+                <ResumeRole title="Business Systems Analyst" date="Jan 2022 – Present" company="Sample Technology Company · Metro Manila">
+                  <li>Documented <mark>requirements</mark> with cross-functional <mark>stakeholders</mark> for a sample internal platform.</li>
+                  <li>Coordinated <mark>UAT</mark>, test evidence, and issue resolution before demonstration releases.</li>
+                  <li>Created example <mark>Power BI</mark> dashboards for operational reporting exercises.</li>
+                  <li>Mapped a fictional approval workflow and proposed process improvements.</li>
+                  <li>Used <mark>SQL</mark> to validate sample datasets and reconcile reporting outputs.</li>
                 </ResumeRole>
-                <ResumeRole title="Associate Vice President, Activities" date="2018 – 2019" company="DLSU Peer Tutors Society">
-                  <li>Led a cross-functional student team delivering academic programs and campus-wide events.</li>
-                  <li>Coordinated partner relationships, schedules, and post-event reporting.</li>
+                <ResumeRole title="Project Coordinator" date="Jun 2020 – Dec 2021" company="Community Innovation Project · Remote">
+                  <li>Maintained schedules, meeting notes, and action logs for a fictional project team.</li>
+                  <li>Prepared sample status reports and coordinated demonstration workshops.</li>
                 </ResumeRole>
               </ResumeSection>
 
               <ResumeSection title="Education">
                 <div className="resume-role-heading">
-                  <strong>BS Information Systems</strong><span>2019</span>
+                  <strong>BS Information Technology</strong><span>2020</span>
                 </div>
-                <p className="resume-company">De La Salle University · Magna Cum Laude</p>
+                <p className="resume-company">Sample State University</p>
               </ResumeSection>
 
               <ResumeSection title="Skills">
-                <p className="skill-line">SQL · Power BI · Requirements Analysis · UAT · Workflow Automation · JavaScript · Figma</p>
+                <p className="skill-line">Requirements Analysis · SQL · Data Visualization · UAT · Process Mapping · Agile Delivery · Documentation</p>
               </ResumeSection>
             </div>
             <div className="preview-legend">
