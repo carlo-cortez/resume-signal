@@ -441,31 +441,37 @@ export default function Home() {
             </div>
             <div className="paper">
               <div className="resume-name">Taylor Rivera</div>
-              <p className="contact">Metro Manila, Philippines · sample.candidate@example.com · linkedin.com/in/sample-profile</p>
+              <p className="contact">Metro Manila, Philippines • sample.candidate@example.com • linkedin.com/in/sample-profile</p>
+
+              <ResumeSection title="Education">
+                <div className="resume-entry">
+                  <div className="resume-line"><strong>Sample State University</strong><span>Metro Manila, Philippines</span></div>
+                  <div className="resume-line"><span>BS Information Technology</span><span>2020</span></div>
+                  <p className="resume-detail"><strong>Relevant Coursework:</strong> Systems Analysis, Database Management, Project Management</p>
+                </div>
+              </ResumeSection>
 
               <ResumeSection title="Experience">
-                <ResumeRole title="Business Systems Analyst" date="Jan 2022 – Present" company="Sample Technology Company · Metro Manila">
+                <ResumeRole organization="Sample Technology Company" location="Metro Manila, Philippines" title="Business Systems Analyst" date="Jan 2022 – Present">
                   <li>Documented <mark>requirements</mark> with cross-functional <mark>stakeholders</mark> for a sample internal platform.</li>
                   <li>Coordinated <mark>UAT</mark>, test evidence, and issue resolution before demonstration releases.</li>
                   <li>Created example <mark>Power BI</mark> dashboards for operational reporting exercises.</li>
                   <li>Mapped a fictional approval workflow and proposed process improvements.</li>
                   <li>Used <mark>SQL</mark> to validate sample datasets and reconcile reporting outputs.</li>
                 </ResumeRole>
-                <ResumeRole title="Project Coordinator" date="Jun 2020 – Dec 2021" company="Community Innovation Project · Remote">
+              </ResumeSection>
+
+              <ResumeSection title="Leadership & Activities">
+                <ResumeRole organization="Community Innovation Project" location="Remote" title="Project Coordinator" date="Jun 2020 – Dec 2021">
                   <li>Maintained schedules, meeting notes, and action logs for a fictional project team.</li>
                   <li>Prepared sample status reports and coordinated demonstration workshops.</li>
                 </ResumeRole>
               </ResumeSection>
 
-              <ResumeSection title="Education">
-                <div className="resume-role-heading">
-                  <strong>BS Information Technology</strong><span>2020</span>
-                </div>
-                <p className="resume-company">Sample State University</p>
-              </ResumeSection>
-
-              <ResumeSection title="Skills">
-                <p className="skill-line">Requirements Analysis · SQL · Data Visualization · UAT · Process Mapping · Agile Delivery · Documentation</p>
+              <ResumeSection title="Skills & Interests">
+                <p className="skill-line"><strong>Technical:</strong> Requirements Analysis, SQL, Data Visualization, UAT, Process Mapping</p>
+                <p className="skill-line"><strong>Tools:</strong> Power BI, Jira, Confluence, Spreadsheet Applications</p>
+                <p className="skill-line"><strong>Interests:</strong> Workflow Design, Community Technology, Visual Communication</p>
               </ResumeSection>
             </div>
             <div className="preview-legend">
@@ -547,11 +553,11 @@ function ResumeSection({ title, children }: { title: string; children: React.Rea
   return <section className="resume-section"><h3>{title}</h3>{children}</section>;
 }
 
-function ResumeRole({ title, date, company, children }: { title: string; date: string; company: string; children: React.ReactNode }) {
+function ResumeRole({ organization, location, title, date, children }: { organization: string; location: string; title: string; date: string; children: React.ReactNode }) {
   return (
     <div className="resume-role">
-      <div className="resume-role-heading"><strong>{title}</strong><span>{date}</span></div>
-      <p className="resume-company">{company}</p>
+      <div className="resume-line"><strong>{organization}</strong><span>{location}</span></div>
+      <div className="resume-line"><strong>{title}</strong><span>{date}</span></div>
       <ul>{children}</ul>
     </div>
   );

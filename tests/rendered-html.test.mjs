@@ -19,9 +19,14 @@ test("defines the finished Resume Signal product surface", async () => {
   assert.match(page, /Harvard-style resume/);
   assert.match(page, /Taylor Rivera/);
   assert.match(page, /Sample Technology Company/);
+  assert.match(page, /Leadership & Activities/);
+  assert.match(page, /Skills & Interests/);
+  assert.ok(page.indexOf('title="Education"') < page.indexOf('title="Experience"'));
   assert.doesNotMatch(page, /Carlo Reyes|Philippine Airlines|De La Salle University|DLSU|Makati City/);
   assert.match(layout, /ATS Resume Builder/);
   assert.match(stylesheet, /@media \(max-width: 540px\)/);
+  assert.match(stylesheet, /Calibri, Arial, Helvetica, sans-serif/);
+  assert.match(stylesheet, /@page \{ size: Letter portrait/);
   assert.match(packageJson, /"dev": "next dev"/);
   assert.doesNotMatch(`${page}\n${layout}`, /codex-preview|SkeletonPreview|react-loading-skeleton|vinext/);
 });
@@ -34,6 +39,7 @@ test("uses server-only Supabase persistence", async () => {
     readFile(new URL(".env.example", root), "utf8"),
   ]);
 
+  assert.match(database, /SUPABASE_SECRET_KEY/);
   assert.match(database, /SUPABASE_SERVICE_ROLE_KEY/);
   assert.match(database, /import "server-only"/);
   assert.match(migration, /create table if not exists public\.job_descriptions/);
@@ -42,7 +48,7 @@ test("uses server-only Supabase persistence", async () => {
   assert.match(route, /export async function GET/);
   assert.match(route, /export async function POST/);
   assert.match(environmentExample, /SUPABASE_URL=/);
-  assert.match(environmentExample, /SUPABASE_SERVICE_ROLE_KEY=/);
+  assert.match(environmentExample, /SUPABASE_SECRET_KEY=/);
   assert.doesNotMatch(route, /D1|OAI-Sites-Authorization|localStorage|sessionStorage/);
   await assert.rejects(access(new URL(".openai/hosting.json", root)));
 });

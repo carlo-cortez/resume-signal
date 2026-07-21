@@ -8,11 +8,11 @@ Requires Node.js 22.13 or newer.
 
 1. Create or choose a Supabase project.
 2. Run `supabase/migrations/20260721000000_create_job_descriptions.sql` in the Supabase SQL editor. If the repository is linked with the Supabase CLI, `supabase db push` applies the same migration.
-3. Copy `.env.example` to `.env.local` and set the project URL and service-role key:
+3. Copy `.env.example` to `.env.local` and set the project URL and server-side secret key:
 
 ```bash
 SUPABASE_URL=https://your-project-ref.supabase.co
-SUPABASE_SERVICE_ROLE_KEY=your-server-only-service-role-key
+SUPABASE_SECRET_KEY=your-server-only-secret-key
 ```
 
 4. Install and start the site:
@@ -22,7 +22,7 @@ npm install
 npm run dev
 ```
 
-Open `http://localhost:3000`. The interface runs locally, while saved job descriptions are written to Supabase. The service-role key stays in the local server process and is never exposed to browser code.
+Open `http://localhost:3000`. The interface runs locally, while saved job descriptions are written to Supabase. The secret key stays in the local server process and is never exposed to browser code. Legacy `SUPABASE_SERVICE_ROLE_KEY` values remain supported as a fallback.
 
 ## Edit the site
 
@@ -46,7 +46,7 @@ Open `http://localhost:3000`. The interface runs locally, while saved job descri
 
 ## Security model
 
-- The Supabase service-role key is server-only and must never use a `NEXT_PUBLIC_` prefix.
+- The Supabase secret key is server-only and must never use a `NEXT_PUBLIC_` prefix.
 - Row Level Security is enabled on `job_descriptions`.
 - Anonymous and authenticated browser roles receive no direct table access.
 - All JD reads and writes go through the local Next.js server route.
