@@ -388,9 +388,9 @@ export default function Home() {
                 <KeywordGroup title="Worth reviewing" keywords={missingKeywords} tone="missing" />
 
                 <button className="save-button" onClick={saveJobDescription} disabled={saveStatus === "saving" || saveStatus === "saved"}>
-                  {saveStatus === "saving" ? "Saving…" : saveStatus === "saved" ? "Saved to hosted library" : "Save this scan to hosted library"}
+                  {saveStatus === "saving" ? "Saving…" : saveStatus === "saved" ? "Saved to Supabase" : "Save this scan to Supabase"}
                 </button>
-                {saveStatus === "error" && <p className="save-error">The hosted database is unavailable in this preview. Try again after deployment.</p>}
+                {saveStatus === "error" && <p className="save-error">The Supabase database is unavailable. Check the server settings in .env.local.</p>}
 
                 <div className="suggestion-list">
                   <div className="section-label">
@@ -492,9 +492,9 @@ export default function Home() {
             </aside>
             <div className="profile-panel">
               <section className="hosted-saves">
-                <div className="section-label"><span>Your hosted saves</span><span>{hostedPostings.length}</span></div>
-                {libraryStatus === "loading" && <p>Loading the hosted library…</p>}
-                {libraryStatus === "error" && <p>The hosted database will become available after deployment.</p>}
+                <div className="section-label"><span>Your cloud saves</span><span>{hostedPostings.length}</span></div>
+                {libraryStatus === "loading" && <p>Loading your Supabase library…</p>}
+                {libraryStatus === "error" && <p>Could not reach Supabase. Check the server settings in .env.local.</p>}
                 {libraryStatus === "ready" && !hostedPostings.length && <p>No saved scans yet. Save a result from the Scan & build tab.</p>}
                 {hostedPostings.slice(0, 5).map((posting) => (
                   <article key={posting.id}>

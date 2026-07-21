@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
+import { access, readFile } from "node:fs/promises";
 import test from "node:test";
 
 const root = new URL("../", import.meta.url);
@@ -19,21 +19,27 @@ test("defines the finished Resume Signal product surface", async () => {
   assert.match(page, /Harvard-style resume/);
   assert.match(layout, /ATS Resume Builder/);
   assert.match(stylesheet, /@media \(max-width: 540px\)/);
-  assert.doesNotMatch(`${page}\n${layout}\n${packageJson}`, /codex-preview|SkeletonPreview|react-loading-skeleton/);
+  assert.match(packageJson, /"dev": "next dev"/);
+  assert.doesNotMatch(`${page}\n${layout}`, /codex-preview|SkeletonPreview|react-loading-skeleton|vinext/);
 });
 
-test("declares hosted JD persistence and a deployable migration", async () => {
-  const [hosting, schema, migration, route] = await Promise.all([
-    readFile(new URL(".openai/hosting.json", root), "utf8"),
-    readFile(new URL("db/schema.ts", root), "utf8"),
-    readFile(new URL("drizzle/0000_remarkable_red_wolf.sql", root), "utf8"),
+test("uses server-only Supabase persistence", async () => {
+  const [database, migration, route, environmentExample] = await Promise.all([
+    readFile(new URL("db/supabase.ts", root), "utf8"),
+    readFile(new URL("supabase/migrations/20260721000000_create_job_descriptions.sql", root), "utf8"),
     readFile(new URL("app/api/job-descriptions/route.ts", root), "utf8"),
+    readFile(new URL(".env.example", root), "utf8"),
   ]);
 
-  assert.match(hosting, /"d1": "DB"/);
-  assert.match(schema, /jobDescriptions/);
-  assert.match(migration, /CREATE TABLE `job_descriptions`/);
+  assert.match(database, /SUPABASE_SERVICE_ROLE_KEY/);
+  assert.match(database, /import "server-only"/);
+  assert.match(migration, /create table if not exists public\.job_descriptions/);
+  assert.match(migration, /enable row level security/);
+  assert.match(migration, /revoke all .* from anon, authenticated/);
   assert.match(route, /export async function GET/);
   assert.match(route, /export async function POST/);
-  assert.doesNotMatch(route, /localStorage|sessionStorage/);
+  assert.match(environmentExample, /SUPABASE_URL=/);
+  assert.match(environmentExample, /SUPABASE_SERVICE_ROLE_KEY=/);
+  assert.doesNotMatch(route, /D1|OAI-Sites-Authorization|localStorage|sessionStorage/);
+  await assert.rejects(access(new URL(".openai/hosting.json", root)));
 });
