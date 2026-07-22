@@ -21,6 +21,8 @@ test("defines the finished Resume Signal product surface", async () => {
   assert.match(page, /Sample Technology Company/);
   assert.match(page, /Projects/);
   assert.match(page, /Operations Dashboard Prototype/);
+  assert.match(page, /className="paper-frame"/);
+  assert.match(page, /new ResizeObserver\(updatePreviewScale\)/);
   assert.match(page, /Leadership & Activities/);
   assert.match(page, /Skills & Interests/);
   assert.match(page, /GPA:<\/strong> 3\.70 \/ 4\.00/);
@@ -33,6 +35,8 @@ test("defines the finished Resume Signal product surface", async () => {
   assert.match(stylesheet, /@media \(max-width: 540px\)/);
   assert.match(stylesheet, /Calibri, Arial, Helvetica, sans-serif/);
   assert.match(stylesheet, /\.paper \{[^}]*font: 11pt\/1\.12 Calibri/);
+  assert.match(stylesheet, /\.paper \{[^}]*width: 8\.5in;[^}]*min-height: 11in;/);
+  assert.match(stylesheet, /transform: scale\(var\(--preview-scale\)\)/);
   assert.match(stylesheet, /@page \{ size: Letter portrait; margin: \.65in \.55in \.4in; \}/);
   assert.match(stylesheet, /@media print \{[\s\S]*\.paper \{[^}]*font: 11pt\/1\.12 Calibri/);
   assert.match(packageJson, /"dev": "next dev"/);

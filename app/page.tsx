@@ -1,6 +1,6 @@
 "use client";
 
-import { ChangeEvent, useEffect, useMemo, useState } from "react";
+import { CSSProperties, ChangeEvent, useEffect, useMemo, useRef, useState } from "react";
 
 type Tab = "scan" | "library";
 type Resolution = "accepted" | "rejected";
@@ -179,6 +179,8 @@ export default function Home() {
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [hostedPostings, setHostedPostings] = useState<SavedPosting[]>([]);
   const [libraryStatus, setLibraryStatus] = useState<"idle" | "loading" | "ready" | "error">("idle");
+  const [previewScale, setPreviewScale] = useState(1);
+  const previewFrameRef = useRef<HTMLDivElement>(null);
 
   const detectedKeywords = useMemo(() => {
     const normalized = jobDescription.toLowerCase();
@@ -216,6 +218,20 @@ export default function Home() {
       })
       .catch(() => setLibraryStatus("error"));
   }, [tab]);
+
+  useEffect(() => {
+    const frame = previewFrameRef.current;
+    if (!frame) return;
+
+    const updatePreviewScale = () => {
+      setPreviewScale(frame.clientWidth / 816);
+    };
+    const observer = new ResizeObserver(updatePreviewScale);
+
+    observer.observe(frame);
+    updatePreviewScale();
+    return () => observer.disconnect();
+  }, []);
 
   function handleFile(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
@@ -444,6 +460,11 @@ export default function Home() {
                 Print preview
               </button>
             </div>
+            <div
+              className="paper-frame"
+              ref={previewFrameRef}
+              style={{ "--preview-scale": previewScale } as CSSProperties}
+            >
             <div className="paper">
               <div className="resume-name">Taylor Rivera</div>
               <p className="contact">Metro Manila, Philippines • sample.candidate@example.com • linkedin.com/in/sample-profile</p>
@@ -488,6 +509,7 @@ export default function Home() {
                   <li>Defined example metrics, validated source data, and documented assumptions for repeatable reporting.</li>
                 </ResumeRole>
               </ResumeSection>
+            </div>
             </div>
             <div className="preview-legend">
               <span><i className="legend-hit" /> Language already supported by your resume</span>
