@@ -1,27 +1,27 @@
-import Link from "next/link";
 import { AuthShell } from "@/app/auth/auth-shell";
-import { login } from "@/app/auth/actions";
+import { signInWithGoogle } from "@/app/auth/actions";
 
 type LoginPageProps = {
-  searchParams: Promise<{ error?: string; message?: string }>;
+  searchParams: Promise<{ error?: string; next?: string }>;
 };
 
 export default async function LoginPage({ searchParams }: LoginPageProps) {
-  const { error, message } = await searchParams;
+  const { error, next = "/" } = await searchParams;
 
   return (
     <AuthShell
-      title="Welcome back"
-      subtitle="Sign in to open your private ATS workspace."
+      title="Sign in or get started"
+      subtitle="Use your Google account to open a private ATS workspace."
       error={error}
-      message={message}
-      footer={<p>New to Resume Signal? <Link href="/register">Create an account</Link></p>}
+      footer={<p>Your first Google sign-in creates your Resume Signal account automatically.</p>}
     >
-      <form action={login} className="auth-form">
-        <label>Email address<input name="email" type="email" autoComplete="email" required /></label>
-        <label>Password<input name="password" type="password" autoComplete="current-password" required /></label>
-        <div className="auth-form-meta"><Link href="/forgot-password">Forgot password?</Link></div>
-        <button type="submit">Sign in <span aria-hidden="true">→</span></button>
+      <form action={signInWithGoogle} className="auth-form">
+        <input name="next" type="hidden" value={next} />
+        <button className="google-auth-button" type="submit">
+          <span className="google-mark" aria-hidden="true">G</span>
+          <span>Continue with Google</span>
+          <span aria-hidden="true">→</span>
+        </button>
       </form>
     </AuthShell>
   );

@@ -2,7 +2,8 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { getSupabasePublicConfig } from "@/lib/supabase/config";
 
-const publicPages = new Set(["/login", "/register", "/forgot-password"]);
+const publicPages = new Set(["/login", "/register"]);
+const retiredAuthPages = new Set(["/forgot-password", "/update-password", "/auth/confirm"]);
 
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({ request });
@@ -26,10 +27,17 @@ export async function updateSession(request: NextRequest) {
   const { data } = await supabase.auth.getClaims();
   const isSignedIn = Boolean(data?.claims?.sub);
   const pathname = request.nextUrl.pathname;
-  const isAuthCallback = pathname.startsWith("/auth/");
+  const isAuthEndpoint = pathname === "/auth/callback" || pathname === "/auth/signout";
   const isApiRoute = pathname.startsWith("/api/");
 
-  if (!isSignedIn && !publicPages.has(pathname) && !isAuthCallback && !isApiRoute) {
+  if (retiredAuthPages.has(pathname)) {
+    const destination = request.nextUrl.clone();
+    destination.pathname = isSignedIn ? "/" : "/login";
+    destination.search = "";
+    return NextResponse.redirect(destination);
+  }
+
+  if (!isSignedIn && !publicPages.has(pathname) && !isAuthEndpoint && !isApiRoute) {
     const loginUrl = request.nextUrl.clone();
     loginUrl.pathname = "/login";
     loginUrl.searchParams.set("next", pathname);

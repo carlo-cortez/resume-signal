@@ -32,8 +32,8 @@ test("defines the finished Resume Signal product surface", async () => {
   assert.doesNotMatch(`${page}\n${layout}`, /codex-preview|SkeletonPreview|react-loading-skeleton|vinext/);
 });
 
-test("uses authenticated, per-user Supabase persistence", async () => {
-  const [database, migration, ownershipMigration, route, environmentExample, serverClient, proxy, login, register] = await Promise.all([
+test("uses Google-only authentication and per-user Supabase persistence", async () => {
+  const [database, migration, ownershipMigration, route, environmentExample, serverClient, proxy, sessionProxy, login, register, authActions] = await Promise.all([
     readFile(new URL("db/supabase.ts", root), "utf8"),
     readFile(new URL("supabase/migrations/20260721000000_create_job_descriptions.sql", root), "utf8"),
     readFile(new URL("supabase/migrations/20260721010000_add_user_ownership.sql", root), "utf8"),
@@ -41,8 +41,10 @@ test("uses authenticated, per-user Supabase persistence", async () => {
     readFile(new URL(".env.example", root), "utf8"),
     readFile(new URL("lib/supabase/server.ts", root), "utf8"),
     readFile(new URL("proxy.ts", root), "utf8"),
+    readFile(new URL("lib/supabase/proxy.ts", root), "utf8"),
     readFile(new URL("app/login/page.tsx", root), "utf8"),
     readFile(new URL("app/register/page.tsx", root), "utf8"),
+    readFile(new URL("app/auth/actions.ts", root), "utf8"),
   ]);
 
   assert.match(database, /SUPABASE_SECRET_KEY/);
@@ -64,8 +66,18 @@ test("uses authenticated, per-user Supabase persistence", async () => {
   assert.match(environmentExample, /SUPABASE_SECRET_KEY=/);
   assert.match(serverClient, /createServerClient/);
   assert.match(proxy, /updateSession/);
-  assert.match(login, /Welcome back/);
-  assert.match(register, /Create your account/);
+  assert.match(sessionProxy, /retiredAuthPages/);
+  assert.match(sessionProxy, /pathname === "\/auth\/callback"/);
+  assert.match(login, /Continue with Google/);
+  assert.doesNotMatch(login, /type="password"|Forgot password|Email address/);
+  assert.match(register, /redirect\("\/login"\)/);
+  assert.match(authActions, /signInWithOAuth/);
+  assert.match(authActions, /provider: "google"/);
+  assert.match(authActions, /skipBrowserRedirect: true/);
+  assert.doesNotMatch(authActions, /signInWithPassword|signUp\(|resetPasswordForEmail|updateUser/);
   assert.doesNotMatch(route, /D1|OAI-Sites-Authorization|localStorage|sessionStorage/);
+  await assert.rejects(access(new URL("app/forgot-password/page.tsx", root)));
+  await assert.rejects(access(new URL("app/update-password/page.tsx", root)));
+  await assert.rejects(access(new URL("app/auth/confirm/route.ts", root)));
   await assert.rejects(access(new URL(".openai/hosting.json", root)));
 });

@@ -16,7 +16,10 @@ SUPABASE_PUBLISHABLE_KEY=sb_publishable_your-key
 SUPABASE_SECRET_KEY=your-server-only-secret-key
 ```
 
-4. In Supabase Auth URL Configuration, use `http://localhost:3000` as the local Site URL and allow `http://localhost:3000/auth/callback` as a redirect URL.
+4. Configure Google-only authentication:
+   - In Google Auth Platform, create a **Web application** OAuth client. Add `http://localhost:3000` as an authorized JavaScript origin and use the Supabase callback URL shown under **Supabase → Authentication → Providers → Google** as the authorized redirect URI.
+   - In **Supabase → Authentication → Providers**, enable Google with that client ID and secret, then disable the Email provider so password and email-link authentication cannot be used.
+   - In **Supabase → Authentication → URL Configuration**, use `http://localhost:3000` as the local Site URL and allow `http://localhost:3000/auth/callback` as a redirect URL.
 
 5. Install and start the site:
 
@@ -25,7 +28,7 @@ npm install
 npm run dev
 ```
 
-Open `http://localhost:3000/register` to create an account. The interface runs locally, while saved job descriptions are written to Supabase. The secret key stays in the local server process and is never exposed to browser code. Legacy `SUPABASE_SERVICE_ROLE_KEY` values remain supported as a fallback.
+Open `http://localhost:3000/login` and continue with Google. The first successful Google sign-in creates the user automatically. The interface runs locally, while saved job descriptions are written to Supabase. The secret key stays in the local server process and is never exposed to browser code. Legacy `SUPABASE_SERVICE_ROLE_KEY` values remain supported as a fallback.
 
 ## Edit the site
 
@@ -46,7 +49,7 @@ Open `http://localhost:3000/register` to create an account. The interface runs l
 - Grounded suggestion diffs with explicit accept/reject decisions
 - Print-friendly Harvard-style résumé preview
 - Supabase-backed JD saves plus role-specific keyword-frequency views
-- Registration, email confirmation, login, password recovery, and sign-out
+- Google-only sign-in and automatic first-time account creation, plus sign-out
 - Per-user database ownership enforced by Row Level Security
 - Responsive desktop and mobile layouts
 
@@ -54,6 +57,7 @@ Open `http://localhost:3000/register` to create an account. The interface runs l
 
 - The Supabase secret key is server-only and must never use a `NEXT_PUBLIC_` prefix.
 - Auth sessions use secure cookies through `@supabase/ssr`.
+- Google is the only configured identity provider; the application does not collect or store passwords.
 - Row Level Security is enabled on `job_descriptions`; authenticated users can access only rows whose `user_id` matches `auth.uid()`.
 - Anonymous requests receive no table access.
 - JD reads and writes go through an authenticated Next.js server route using the current user session.
@@ -64,7 +68,7 @@ Open `http://localhost:3000/register` to create an account. The interface runs l
 2. Structure extracted résumé and JD text into the shared TypeScript schema.
 3. Keep format scoring deterministic and add semantic matching through a server-side model API.
 4. Add DOCX export and round-trip parser tests.
-5. Configure production SMTP, CAPTCHA, and deployment redirect URLs before opening registration publicly.
+5. Configure the production Google OAuth origin, Supabase callback, consent-screen branding, and deployment redirect URL before opening access publicly.
 
 ## Portability
 
