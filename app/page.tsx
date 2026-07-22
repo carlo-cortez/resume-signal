@@ -452,7 +452,6 @@ export default function Home() {
                 <div className="resume-entry">
                   <div className="resume-line"><strong>Sample State University</strong><span>Metro Manila, Philippines</span></div>
                   <div className="resume-line"><span>BS Information Technology</span><span>2020</span></div>
-                  <p className="resume-detail"><strong>Relevant Coursework:</strong> Systems Analysis, Database Management, Project Management</p>
                 </div>
               </ResumeSection>
 
