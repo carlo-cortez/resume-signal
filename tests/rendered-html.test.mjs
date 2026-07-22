@@ -27,6 +27,7 @@ test("defines the finished Resume Signal product surface", async () => {
   assert.match(page, /Awards:<\/strong> Dean’s List; Academic Merit Scholarship/);
   assert.doesNotMatch(page, /Relevant Coursework|Systems Analysis, Database Management/);
   assert.ok(page.indexOf('title="Education"') < page.indexOf('title="Experience"'));
+  assert.ok(page.indexOf('title="Skills & Interests"') < page.indexOf('title="Projects"'));
   assert.doesNotMatch(page, /Carlo Reyes|Philippine Airlines|De La Salle University|DLSU|Makati City/);
   assert.match(layout, /ATS Resume Builder/);
   assert.match(stylesheet, /@media \(max-width: 540px\)/);
