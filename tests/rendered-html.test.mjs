@@ -19,6 +19,8 @@ test("defines the finished Resume Signal product surface", async () => {
   assert.match(page, /Harvard-style resume/);
   assert.match(page, /Taylor Rivera/);
   assert.match(page, /Sample Technology Company/);
+  assert.match(page, /Projects/);
+  assert.match(page, /Operations Dashboard Prototype/);
   assert.match(page, /Leadership & Activities/);
   assert.match(page, /Skills & Interests/);
   assert.match(page, /GPA:<\/strong> 3\.70 \/ 4\.00/);

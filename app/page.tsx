@@ -469,6 +469,13 @@ export default function Home() {
                 </ResumeRole>
               </ResumeSection>
 
+              <ResumeSection title="Projects">
+                <ResumeRole organization="Operations Dashboard Prototype" location="Independent Project" title="Power BI · SQL" date="2021">
+                  <li>Built a sample dashboard that summarized service volume, turnaround time, and recurring process exceptions.</li>
+                  <li>Defined example metrics, validated source data, and documented assumptions for repeatable reporting.</li>
+                </ResumeRole>
+              </ResumeSection>
+
               <ResumeSection title="Leadership & Activities">
                 <ResumeRole organization="Community Innovation Project" location="Remote" title="Project Coordinator" date="Jun 2020 – Dec 2021">
                   <li>Maintained schedules, meeting notes, and action logs for a fictional project team.</li>
