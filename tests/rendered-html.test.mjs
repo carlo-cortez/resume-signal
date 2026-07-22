@@ -32,7 +32,9 @@ test("defines the finished Resume Signal product surface", async () => {
   assert.match(layout, /ATS Resume Builder/);
   assert.match(stylesheet, /@media \(max-width: 540px\)/);
   assert.match(stylesheet, /Calibri, Arial, Helvetica, sans-serif/);
-  assert.match(stylesheet, /@page \{ size: Letter portrait/);
+  assert.match(stylesheet, /\.paper \{[^}]*font: 11pt\/1\.12 Calibri/);
+  assert.match(stylesheet, /@page \{ size: Letter portrait; margin: \.65in \.55in \.4in; \}/);
+  assert.match(stylesheet, /@media print \{[\s\S]*\.paper \{[^}]*font: 11pt\/1\.12 Calibri/);
   assert.match(packageJson, /"dev": "next dev"/);
   assert.match(packageJson, /"@supabase\/ssr"/);
   assert.doesNotMatch(`${page}\n${layout}`, /codex-preview|SkeletonPreview|react-loading-skeleton|vinext/);
