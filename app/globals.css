@@ -192,6 +192,8 @@ textarea:focus { border-color: var(--forest); outline: 3px solid rgba(23,79,63,.
 .resume-line { display: flex; justify-content: space-between; gap: 20px; align-items: baseline; min-width: 0; }
 .resume-line > :first-child { min-width: 0; }
 .resume-line > span:last-child { flex: 0 0 auto; text-align: right; white-space: nowrap; }
+.education-details { margin-top: 3px; }
+.education-details p { margin: 1px 0 0; line-height: 1.15; }
 .resume-role ul { margin: 5px 0 0; padding-left: .36in; list-style: disc; }
 .resume-role li { margin: 0 0 2px; padding-left: 2px; line-height: 1.25; }
 .paper mark { padding: 0; color: inherit; background: transparent; border-bottom: 1px dotted #555; }
