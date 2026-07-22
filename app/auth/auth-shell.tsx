@@ -13,16 +13,16 @@ export function AuthShell({ title, subtitle, error, message, children, footer }:
   return (
     <main className="auth-page">
       <section className="auth-intro">
-        <Link className="auth-brand" href="/login" aria-label="Resume Signal authentication">
+        <Link className="auth-brand" href="/login" aria-label="Resume Signal home">
           <span>RS</span>
           <strong>Resume Signal</strong>
         </Link>
         <div>
           <p className="eyebrow">Private resume workspace</p>
           <h1>Your job search deserves a secure home.</h1>
-          <p>Keep saved job descriptions and resume decisions separated by account, with Supabase-backed authentication and row-level privacy.</p>
+          <p>Keep your saved job descriptions and resume decisions private, organized, and ready whenever you return.</p>
         </div>
-        <p className="auth-principle">Google handles sign-in. Supabase Auth keeps your Resume Signal workspace and saved job descriptions private.</p>
+        <p className="auth-principle">Your workspace belongs only to you, so your saved roles and resume decisions stay personal.</p>
       </section>
 
       <section className="auth-form-panel">

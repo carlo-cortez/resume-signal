@@ -11,9 +11,9 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
   return (
     <AuthShell
       title="Sign in or get started"
-      subtitle="Use your Google account to open a private ATS workspace."
+      subtitle="Continue to your private resume workspace."
       error={error}
-      footer={<p>Your first Google sign-in creates your Resume Signal account automatically.</p>}
+      footer={<p>New here? Continuing with Google sets up your workspace automatically.</p>}
     >
       <form action={signInWithGoogle} className="auth-form">
         <input name="next" type="hidden" value={next} />

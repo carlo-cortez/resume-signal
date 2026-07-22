@@ -33,7 +33,7 @@ test("defines the finished Resume Signal product surface", async () => {
 });
 
 test("uses Google-only authentication and per-user Supabase persistence", async () => {
-  const [database, migration, ownershipMigration, route, environmentExample, serverClient, proxy, sessionProxy, login, register, authActions] = await Promise.all([
+  const [database, migration, ownershipMigration, route, environmentExample, serverClient, proxy, sessionProxy, login, register, authActions, authShell] = await Promise.all([
     readFile(new URL("db/supabase.ts", root), "utf8"),
     readFile(new URL("supabase/migrations/20260721000000_create_job_descriptions.sql", root), "utf8"),
     readFile(new URL("supabase/migrations/20260721010000_add_user_ownership.sql", root), "utf8"),
@@ -45,6 +45,7 @@ test("uses Google-only authentication and per-user Supabase persistence", async 
     readFile(new URL("app/login/page.tsx", root), "utf8"),
     readFile(new URL("app/register/page.tsx", root), "utf8"),
     readFile(new URL("app/auth/actions.ts", root), "utf8"),
+    readFile(new URL("app/auth/auth-shell.tsx", root), "utf8"),
   ]);
 
   assert.match(database, /SUPABASE_SECRET_KEY/);
@@ -75,6 +76,8 @@ test("uses Google-only authentication and per-user Supabase persistence", async 
   assert.match(authActions, /provider: "google"/);
   assert.match(authActions, /skipBrowserRedirect: true/);
   assert.doesNotMatch(authActions, /signInWithPassword|signUp\(|resetPasswordForEmail|updateUser/);
+  assert.doesNotMatch(authShell, /Supabase|authentication|row-level/);
+  assert.doesNotMatch(route, /Authentication required/);
   assert.doesNotMatch(route, /D1|OAI-Sites-Authorization|localStorage|sessionStorage/);
   await assert.rejects(access(new URL("app/forgot-password/page.tsx", root)));
   await assert.rejects(access(new URL("app/update-password/page.tsx", root)));

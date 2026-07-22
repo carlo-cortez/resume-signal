@@ -16,6 +16,6 @@ export async function GET(request: Request) {
   }
 
   return NextResponse.redirect(
-    new URL("/login?error=The%20authentication%20link%20is%20invalid%20or%20expired.", url.origin),
+    new URL("/login?error=Sign-in%20could%20not%20be%20completed.%20Please%20try%20again.", url.origin),
   );
 }

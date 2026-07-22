@@ -19,7 +19,7 @@ export async function GET() {
     const userId = identity?.claims?.sub;
 
     if (authError || !userId) {
-      return NextResponse.json({ error: "Authentication required." }, { status: 401 });
+      return NextResponse.json({ error: "Please sign in to continue." }, { status: 401 });
     }
 
     const { data, error } = await supabase
@@ -65,7 +65,7 @@ export async function POST(request: Request) {
     const userId = identity?.claims?.sub;
 
     if (authError || !userId) {
-      return NextResponse.json({ error: "Authentication required." }, { status: 401 });
+      return NextResponse.json({ error: "Please sign in to continue." }, { status: 401 });
     }
 
     const { data, error } = await supabase

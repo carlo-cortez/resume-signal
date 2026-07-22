@@ -32,7 +32,7 @@ export async function signInWithGoogle(formData: FormData) {
   });
 
   if (error || !data.url) {
-    redirect("/login?error=Google%20sign-in%20is%20temporarily%20unavailable.");
+    redirect("/login?error=Sign-in%20is%20temporarily%20unavailable.");
   }
 
   redirect(data.url);
