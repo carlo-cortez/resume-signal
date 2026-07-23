@@ -28,6 +28,9 @@ test("defines the finished Resume Signal product surface", async () => {
   assert.match(page, /className="paper-stage"/);
   assert.match(page, /new ResizeObserver\(updatePreviewScale\)/);
   assert.match(page, /window\.innerHeight - previewChromeHeight/);
+  assert.match(page, /useState<PreviewMode>\("readable"\)/);
+  assert.match(page, />\s*Readable\s*<\/button>/);
+  assert.match(page, />\s*Full page\s*<\/button>/);
   assert.match(page, /Leadership & Activities/);
   assert.match(page, /Skills & Interests/);
   assert.match(page, /GPA:<\/strong> 3\.70 \/ 4\.00/);

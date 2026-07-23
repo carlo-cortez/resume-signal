@@ -181,6 +181,10 @@ textarea:focus { border-color: var(--forest); outline: 3px solid rgba(23,79,63,.
 .preview-header { display: flex; justify-content: space-between; align-items: end; margin-bottom: 18px; }
 .preview-header .eyebrow { margin-bottom: 5px; }
 .preview-header h2 { margin: 0; font: 500 24px/1.2 Georgia, serif; }
+.preview-actions { display: flex; align-items: center; gap: 10px; }
+.preview-mode { display: flex; padding: 3px; border: 1px solid #aeb8b1; border-radius: 999px; background: rgba(255,255,255,.45); }
+.preview-mode button { border: 0; border-radius: 999px; padding: 7px 10px; color: var(--muted); background: transparent; font-size: 10px; font-weight: 700; }
+.preview-mode button.active { color: white; background: var(--forest); }
 .secondary-button { border: 1px solid #aeb8b1; border-radius: 999px; padding: 9px 13px; color: var(--ink); background: transparent; font-size: 10px; font-weight: 700; }
 .secondary-button:hover { background: var(--paper); }
 .paper-frame { display: flex; justify-content: center; width: 100%; height: calc(1056px * var(--preview-scale)); overflow: hidden; }
@@ -287,7 +291,8 @@ footer strong { color: var(--ink); }
   .hero { padding-bottom: 42px; }
   .controls-column, .preview-column, .library-view { padding-left: 16px; padding-right: 16px; }
   .panel { padding: 17px; }
-  .preview-header { align-items: center; }
+  .preview-header { align-items: start; gap: 12px; }
+  .preview-actions { align-items: flex-end; flex-direction: column-reverse; }
   .preview-legend { display: grid; }
   .role-list { grid-template-columns: 1fr; }
   .profile-heading { display: grid; gap: 12px; }

@@ -4,6 +4,7 @@ import { CSSProperties, ChangeEvent, useEffect, useMemo, useRef, useState } from
 
 type Tab = "scan" | "library";
 type Resolution = "accepted" | "rejected";
+type PreviewMode = "readable" | "page";
 
 type SavedPosting = {
   id: string;
@@ -184,6 +185,7 @@ export default function Home() {
   const [hostedPostings, setHostedPostings] = useState<SavedPosting[]>([]);
   const [libraryStatus, setLibraryStatus] = useState<"idle" | "loading" | "ready" | "error">("idle");
   const [previewScale, setPreviewScale] = useState(1);
+  const [previewMode, setPreviewMode] = useState<PreviewMode>("readable");
   const previewFrameRef = useRef<HTMLDivElement>(null);
 
   const detectedKeywords = useMemo(() => {
@@ -231,7 +233,7 @@ export default function Home() {
       const widthScale = frame.clientWidth / letterPageWidth;
       const availableHeight = Math.max(420, window.innerHeight - previewChromeHeight);
       const heightScale = availableHeight / letterPageHeight;
-      setPreviewScale(Math.min(widthScale, heightScale));
+      setPreviewScale(previewMode === "page" ? Math.min(widthScale, heightScale) : widthScale);
     };
     const observer = new ResizeObserver(updatePreviewScale);
 
@@ -242,7 +244,7 @@ export default function Home() {
       observer.disconnect();
       window.removeEventListener("resize", updatePreviewScale);
     };
-  }, []);
+  }, [previewMode]);
 
   function handleFile(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
@@ -467,9 +469,29 @@ export default function Home() {
                 <p className="eyebrow">Live document preview</p>
                 <h2>Harvard-style resume</h2>
               </div>
-              <button className="secondary-button" onClick={() => window.print()}>
-                Print preview
-              </button>
+              <div className="preview-actions">
+                <div className="preview-mode" role="group" aria-label="Preview size">
+                  <button
+                    className={previewMode === "readable" ? "active" : ""}
+                    type="button"
+                    aria-pressed={previewMode === "readable"}
+                    onClick={() => setPreviewMode("readable")}
+                  >
+                    Readable
+                  </button>
+                  <button
+                    className={previewMode === "page" ? "active" : ""}
+                    type="button"
+                    aria-pressed={previewMode === "page"}
+                    onClick={() => setPreviewMode("page")}
+                  >
+                    Full page
+                  </button>
+                </div>
+                <button className="secondary-button" onClick={() => window.print()}>
+                  Print preview
+                </button>
+              </div>
             </div>
             <div
               className="paper-frame"
