@@ -553,12 +553,10 @@ export default function Home() {
 
               <ResumeSection title="Leadership & Activities">
                 <ResumeRole organization="Community Innovation Project" location="Remote" title="Project Coordinator" date="Jun 2020 – Dec 2021">
-                  <li>Maintained schedules, meeting notes, and action logs for a fictional project team.</li>
-                  <li>Prepared sample status reports and coordinated demonstration workshops.</li>
+                  <li>Coordinated schedules, action logs, status reports, and demonstration workshops for a fictional project team.</li>
                 </ResumeRole>
                 <ResumeRole organization="University Technology Society" location="Metro Manila, Philippines" title="Programs Lead" date="Aug 2019 – May 2020">
-                  <li>Coordinated a volunteer team delivering peer workshops and student technology events.</li>
-                  <li>Tracked event plans, speaker requirements, and participant feedback for future programs.</li>
+                  <li>Led volunteers delivering peer workshops and technology events, tracking plans, speakers, and participant feedback.</li>
                 </ResumeRole>
               </ResumeSection>
 

@@ -30,6 +30,9 @@ test("defines the finished Resume Signal product surface", async () => {
   assert.match(page, /Data Analytics Intern/);
   assert.match(page, /University Technology Society/);
   assert.match(page, /Programs Lead/);
+  assert.match(page, /Coordinated schedules, action logs, status reports, and demonstration workshops/);
+  assert.match(page, /Led volunteers delivering peer workshops and technology events/);
+  assert.doesNotMatch(page, /Maintained schedules, meeting notes|Tracked event plans, speaker requirements/);
   assert.match(page, /Projects/);
   assert.match(page, /Operations Dashboard Prototype/);
   assert.match(page, /Methods:<\/strong> Agile, User Stories, Process Improvement, Requirements Documentation/);
