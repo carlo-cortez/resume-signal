@@ -18,11 +18,16 @@ test("defines the finished Resume Signal product surface", async () => {
   assert.match(page, /JD library/);
   assert.match(page, /Harvard-style resume/);
   assert.match(page, /Taylor Rivera/);
+  assert.match(page, /\+63 900 000 0000/);
+  assert.match(page, /portfolio\.example\.com/);
+  assert.doesNotMatch(page, /linkedin\.com\/in\/sample-profile/);
   assert.match(page, /Sample Technology Company/);
   assert.match(page, /Projects/);
   assert.match(page, /Operations Dashboard Prototype/);
   assert.match(page, /className="paper-frame"/);
+  assert.match(page, /className="paper-stage"/);
   assert.match(page, /new ResizeObserver\(updatePreviewScale\)/);
+  assert.match(page, /window\.innerHeight - previewChromeHeight/);
   assert.match(page, /Leadership & Activities/);
   assert.match(page, /Skills & Interests/);
   assert.match(page, /GPA:<\/strong> 3\.70 \/ 4\.00/);
@@ -36,7 +41,7 @@ test("defines the finished Resume Signal product surface", async () => {
   assert.match(stylesheet, /Calibri, Arial, Helvetica, sans-serif/);
   assert.match(stylesheet, /\.paper \{[^}]*font: 11pt\/1\.12 Calibri/);
   assert.match(stylesheet, /\.paper \{[^}]*width: 8\.5in;[^}]*min-height: 11in;/);
-  assert.match(stylesheet, /transform: scale\(var\(--preview-scale\)\)/);
+  assert.match(stylesheet, /\.paper-stage \{[^}]*transform: scale\(var\(--preview-scale\)\)/);
   assert.match(stylesheet, /@page \{ size: Letter portrait; margin: \.65in \.55in \.4in; \}/);
   assert.match(stylesheet, /@media print \{[\s\S]*\.paper \{[^}]*font: 11pt\/1\.12 Calibri/);
   assert.match(packageJson, /"dev": "next dev"/);

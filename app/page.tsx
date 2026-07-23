@@ -61,6 +61,10 @@ const keywordCandidates = [
 
 const sampleJobDescription = `We are looking for a Business Analyst to partner with cross-functional stakeholders and translate business requirements into clear user stories. The role will facilitate Agile ceremonies, maintain delivery documentation in Jira and Confluence, support UAT, and use SQL and Power BI to validate findings. Experience with process improvement and BPMN is preferred.`;
 
+const letterPageWidth = 816;
+const letterPageHeight = 1056;
+const previewChromeHeight = 180;
+
 const suggestionBank: Record<string, Suggestion> = {
   agile: {
     keyword: "Agile",
@@ -224,13 +228,20 @@ export default function Home() {
     if (!frame) return;
 
     const updatePreviewScale = () => {
-      setPreviewScale(frame.clientWidth / 816);
+      const widthScale = frame.clientWidth / letterPageWidth;
+      const availableHeight = Math.max(420, window.innerHeight - previewChromeHeight);
+      const heightScale = availableHeight / letterPageHeight;
+      setPreviewScale(Math.min(widthScale, heightScale));
     };
     const observer = new ResizeObserver(updatePreviewScale);
 
     observer.observe(frame);
+    window.addEventListener("resize", updatePreviewScale);
     updatePreviewScale();
-    return () => observer.disconnect();
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", updatePreviewScale);
+    };
   }, []);
 
   function handleFile(event: ChangeEvent<HTMLInputElement>) {
@@ -465,9 +476,10 @@ export default function Home() {
               ref={previewFrameRef}
               style={{ "--preview-scale": previewScale } as CSSProperties}
             >
-            <div className="paper">
-              <div className="resume-name">Taylor Rivera</div>
-              <p className="contact">Metro Manila, Philippines • sample.candidate@example.com • linkedin.com/in/sample-profile</p>
+              <div className="paper-stage">
+                <div className="paper">
+                  <div className="resume-name">Taylor Rivera</div>
+                  <p className="contact">Metro Manila • +63 900 000 0000 • sample@example.com • portfolio.example.com</p>
 
               <ResumeSection title="Education">
                 <div className="resume-entry">
@@ -509,7 +521,8 @@ export default function Home() {
                   <li>Defined example metrics, validated source data, and documented assumptions for repeatable reporting.</li>
                 </ResumeRole>
               </ResumeSection>
-            </div>
+                </div>
+              </div>
             </div>
             <div className="preview-legend">
               <span><i className="legend-hit" /> Language already supported by your resume</span>
