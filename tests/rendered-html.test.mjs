@@ -16,6 +16,11 @@ test("defines the finished Resume Signal product surface", async () => {
   assert.match(page, /Build the version of your resume this role needs/);
   assert.match(page, /Scan & build/);
   assert.match(page, /JD library/);
+  assert.match(page, /"Systems Analyst"/);
+  assert.match(page, /"Project Coordinator"/);
+  assert.match(page, /"Operations Analyst"/);
+  assert.match(page, /"QA \/ UAT Analyst"/);
+  assert.match(page, /Save postings in this category to build a keyword profile/);
   assert.match(page, /Harvard-style resume/);
   assert.match(page, /Taylor Rivera/);
   assert.match(page, /\+63 900 000 0000/);

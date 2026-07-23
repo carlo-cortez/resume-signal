@@ -111,6 +111,16 @@ const suggestionBank: Record<string, Suggestion> = {
   },
 };
 
+const roleCategoryOptions = [
+  "Business Analyst",
+  "Systems Analyst",
+  "Product Owner",
+  "Project Coordinator",
+  "Operations Analyst",
+  "Data / Reporting",
+  "QA / UAT Analyst",
+];
+
 const roleProfiles: RoleProfile[] = [
   {
     name: "Business Analyst",
@@ -165,6 +175,34 @@ const roleProfiles: RoleProfile[] = [
     postings: [
       { company: "Summit Financial", role: "Reporting Analyst", date: "Jun 10", outcome: "applied" },
     ],
+  },
+  {
+    name: "Systems Analyst",
+    subtitle: "No postings saved",
+    core: [],
+    variable: [],
+    postings: [],
+  },
+  {
+    name: "Project Coordinator",
+    subtitle: "No postings saved",
+    core: [],
+    variable: [],
+    postings: [],
+  },
+  {
+    name: "Operations Analyst",
+    subtitle: "No postings saved",
+    core: [],
+    variable: [],
+    postings: [],
+  },
+  {
+    name: "QA / UAT Analyst",
+    subtitle: "No postings saved",
+    core: [],
+    variable: [],
+    postings: [],
   },
 ];
 
@@ -397,9 +435,7 @@ export default function Home() {
                 <label>
                   <span>Role category</span>
                   <select value={roleCategory} onChange={(event) => setRoleCategory(event.target.value)}>
-                    <option>Business Analyst</option>
-                    <option>Product Owner</option>
-                    <option>Data / Reporting</option>
+                    {roleCategoryOptions.map((category) => <option key={category}>{category}</option>)}
                   </select>
                 </label>
               </div>
@@ -707,6 +743,7 @@ function FrequencyList({ title, subtitle, values, tone }: { title: string; subti
   return (
     <section className="frequency-list">
       <h4>{title}</h4><p>{subtitle}</p>
+      {!values.length && <p className="empty-state">Save postings in this category to build a keyword profile.</p>}
       {values.map((value) => (
         <div className="frequency-row" key={value.term}>
           <div><span>{value.term}</span><span>{value.frequency}%</span></div>
