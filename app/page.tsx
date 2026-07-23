@@ -527,9 +527,8 @@ export default function Home() {
               <ResumeSection title="Education">
                 <div className="resume-entry">
                   <div className="resume-line"><strong>Sample State University</strong><span>Metro Manila, Philippines</span></div>
-                  <div className="resume-line"><span>BS Information Technology</span><span>2020</span></div>
+                  <div className="resume-line"><span>BS Information Technology · <strong>GPA:</strong> 3.70 / 4.00</span><span>2020</span></div>
                   <div className="education-details">
-                    <p><strong>GPA:</strong> 3.70 / 4.00</p>
                     <p><strong>Awards:</strong> Dean’s List; Academic Merit Scholarship</p>
                   </div>
                 </div>

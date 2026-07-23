@@ -43,7 +43,7 @@ test("defines the finished Resume Signal product surface", async () => {
   assert.match(page, /<option value="page">Fit page<\/option>/);
   assert.match(page, /Leadership & Activities/);
   assert.match(page, /Skills & Interests/);
-  assert.match(page, /GPA:<\/strong> 3\.70 \/ 4\.00/);
+  assert.match(page, /BS Information Technology · <strong>GPA:<\/strong> 3\.70 \/ 4\.00/);
   assert.match(page, /Awards:<\/strong> Dean’s List; Academic Merit Scholarship/);
   assert.ok(page.indexOf('title="Professional Summary"') < page.indexOf('title="Education"'));
   assert.doesNotMatch(page, /Relevant Coursework|Systems Analysis, Database Management/);
