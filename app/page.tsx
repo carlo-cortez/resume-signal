@@ -521,7 +521,7 @@ export default function Home() {
                   <p className="contact">Metro Manila • +63 900 000 0000 • sample@example.com • portfolio.example.com</p>
 
               <ResumeSection title="Professional Summary">
-                <p className="summary-copy">Business systems and data analyst experienced in translating stakeholder needs into documented requirements, tested workflows, and clear operational reporting. Brings a structured, collaborative approach to process improvement and technology delivery.</p>
+                <p className="summary-copy">Business systems and data analyst who translates stakeholder needs into clear requirements, tested workflows, and operational reporting. Brings a structured, collaborative approach to process improvement and technology delivery.</p>
               </ResumeSection>
 
               <ResumeSection title="Education">
@@ -568,12 +568,10 @@ export default function Home() {
 
               <ResumeSection title="Projects">
                 <ResumeRole organization="Operations Dashboard Prototype" location="Independent Project" title="Power BI · SQL" date="2021">
-                  <li>Built a sample dashboard that summarized service volume, turnaround time, and recurring process exceptions.</li>
-                  <li>Defined example metrics, validated source data, and documented assumptions for repeatable reporting.</li>
+                  <li>Built a sample Power BI dashboard that summarized service trends, validated source data, and documented repeatable reporting assumptions.</li>
                 </ResumeRole>
                 <ResumeRole organization="Service Request Workflow Redesign" location="Team Project" title="Process Mapping · UAT" date="2020">
-                  <li>Mapped a sample request process and identified handoff delays and duplicate data entry.</li>
-                  <li>Prototyped a simplified workflow and documented UAT scenarios for stakeholder review.</li>
+                  <li>Mapped a sample request process, identified handoff delays, and prototyped a simplified workflow with documented UAT scenarios.</li>
                 </ResumeRole>
               </ResumeSection>
                 </div>

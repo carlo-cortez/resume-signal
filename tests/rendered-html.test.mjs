@@ -21,7 +21,7 @@ test("defines the finished Resume Signal product surface", async () => {
   assert.match(page, /\+63 900 000 0000/);
   assert.match(page, /portfolio\.example\.com/);
   assert.match(page, /title="Professional Summary"/);
-  assert.match(page, /Business systems and data analyst experienced in translating stakeholder needs/);
+  assert.match(page, /Business systems and data analyst who translates stakeholder needs/);
   assert.doesNotMatch(page, /linkedin\.com\/in\/sample-profile/);
   assert.match(page, /Sample Technology Company/);
   assert.match(page, /Sample Financial Services Firm/);
@@ -33,6 +33,9 @@ test("defines the finished Resume Signal product surface", async () => {
   assert.match(page, /Methods:<\/strong> Agile, User Stories, Process Improvement, Requirements Documentation/);
   assert.match(page, /Service Request Workflow Redesign/);
   assert.match(page, /Process Mapping · UAT/);
+  assert.match(page, /Built a sample Power BI dashboard that summarized service trends/);
+  assert.match(page, /prototyped a simplified workflow with documented UAT scenarios/);
+  assert.doesNotMatch(page, /Defined example metrics|Prototyped a simplified workflow and documented/);
   assert.match(page, /className="paper-frame"/);
   assert.match(page, /className="paper-stage"/);
   assert.match(page, /new ResizeObserver\(updatePreviewScale\)/);
