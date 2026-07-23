@@ -559,6 +559,7 @@ export default function Home() {
               <ResumeSection title="Skills & Interests">
                 <p className="skill-line"><strong>Technical:</strong> Requirements Analysis, SQL, Data Visualization, UAT, Process Mapping</p>
                 <p className="skill-line"><strong>Tools:</strong> Power BI, Jira, Confluence, Spreadsheet Applications</p>
+                <p className="skill-line"><strong>Methods:</strong> Agile, User Stories, Process Improvement, Requirements Documentation</p>
                 <p className="skill-line"><strong>Interests:</strong> Workflow Design, Community Technology, Visual Communication</p>
               </ResumeSection>
 
@@ -566,6 +567,10 @@ export default function Home() {
                 <ResumeRole organization="Operations Dashboard Prototype" location="Independent Project" title="Power BI · SQL" date="2021">
                   <li>Built a sample dashboard that summarized service volume, turnaround time, and recurring process exceptions.</li>
                   <li>Defined example metrics, validated source data, and documented assumptions for repeatable reporting.</li>
+                </ResumeRole>
+                <ResumeRole organization="Service Request Workflow Redesign" location="Team Project" title="Process Mapping · UAT" date="2020">
+                  <li>Mapped a sample request process and identified handoff delays and duplicate data entry.</li>
+                  <li>Prototyped a simplified workflow and documented UAT scenarios for stakeholder review.</li>
                 </ResumeRole>
               </ResumeSection>
                 </div>

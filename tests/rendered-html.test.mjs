@@ -28,6 +28,9 @@ test("defines the finished Resume Signal product surface", async () => {
   assert.match(page, /Programs Lead/);
   assert.match(page, /Projects/);
   assert.match(page, /Operations Dashboard Prototype/);
+  assert.match(page, /Methods:<\/strong> Agile, User Stories, Process Improvement, Requirements Documentation/);
+  assert.match(page, /Service Request Workflow Redesign/);
+  assert.match(page, /Process Mapping · UAT/);
   assert.match(page, /className="paper-frame"/);
   assert.match(page, /className="paper-stage"/);
   assert.match(page, /new ResizeObserver\(updatePreviewScale\)/);
