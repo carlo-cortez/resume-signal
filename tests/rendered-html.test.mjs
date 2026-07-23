@@ -37,7 +37,9 @@ test("defines the finished Resume Signal product surface", async () => {
   assert.match(page, /Operations Dashboard Prototype/);
   assert.match(page, /Methods:<\/strong> Agile, User Stories, Process Improvement, Requirements Documentation/);
   assert.match(page, /Service Request Workflow Redesign/);
-  assert.match(page, /Process Mapping · UAT/);
+  assert.match(page, /<ResumeProject name="Operations Dashboard Prototype" date="2021">/);
+  assert.match(page, /<ResumeProject name="Service Request Workflow Redesign" date="2020">/);
+  assert.doesNotMatch(page, /Independent Project|Team Project|Power BI · SQL|Process Mapping · UAT/);
   assert.match(page, /Built a sample Power BI dashboard that summarized service trends/);
   assert.match(page, /prototyped a simplified workflow with documented UAT scenarios/);
   assert.doesNotMatch(page, /Defined example metrics|Prototyped a simplified workflow and documented/);

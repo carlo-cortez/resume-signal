@@ -568,12 +568,12 @@ export default function Home() {
               </ResumeSection>
 
               <ResumeSection title="Projects">
-                <ResumeRole organization="Operations Dashboard Prototype" location="Independent Project" title="Power BI · SQL" date="2021">
+                <ResumeProject name="Operations Dashboard Prototype" date="2021">
                   <li>Built a sample Power BI dashboard that summarized service trends, validated source data, and documented repeatable reporting assumptions.</li>
-                </ResumeRole>
-                <ResumeRole organization="Service Request Workflow Redesign" location="Team Project" title="Process Mapping · UAT" date="2020">
+                </ResumeProject>
+                <ResumeProject name="Service Request Workflow Redesign" date="2020">
                   <li>Mapped a sample request process, identified handoff delays, and prototyped a simplified workflow with documented UAT scenarios.</li>
-                </ResumeRole>
+                </ResumeProject>
               </ResumeSection>
                 </div>
               </div>
@@ -689,6 +689,15 @@ function ResumeRole({ organization, location, title, date, children }: { organiz
     <div className="resume-role">
       <div className="resume-line"><strong>{organization}</strong><span>{location}</span></div>
       <div className="resume-line"><strong>{title}</strong><span>{date}</span></div>
+      <ul>{children}</ul>
+    </div>
+  );
+}
+
+function ResumeProject({ name, date, children }: { name: string; date: string; children: React.ReactNode }) {
+  return (
+    <div className="resume-role">
+      <div className="resume-line"><strong>{name}</strong><span>{date}</span></div>
       <ul>{children}</ul>
     </div>
   );
