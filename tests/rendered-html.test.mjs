@@ -22,6 +22,10 @@ test("defines the finished Resume Signal product surface", async () => {
   assert.match(page, /portfolio\.example\.com/);
   assert.doesNotMatch(page, /linkedin\.com\/in\/sample-profile/);
   assert.match(page, /Sample Technology Company/);
+  assert.match(page, /Sample Financial Services Firm/);
+  assert.match(page, /Data Analytics Intern/);
+  assert.match(page, /University Technology Society/);
+  assert.match(page, /Programs Lead/);
   assert.match(page, /Projects/);
   assert.match(page, /Operations Dashboard Prototype/);
   assert.match(page, /className="paper-frame"/);
