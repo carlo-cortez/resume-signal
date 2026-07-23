@@ -470,24 +470,16 @@ export default function Home() {
                 <h2>Harvard-style resume</h2>
               </div>
               <div className="preview-actions">
-                <div className="preview-mode" role="group" aria-label="Preview size">
-                  <button
-                    className={previewMode === "readable" ? "active" : ""}
-                    type="button"
-                    aria-pressed={previewMode === "readable"}
-                    onClick={() => setPreviewMode("readable")}
+                <label className="preview-view-control">
+                  <span>View</span>
+                  <select
+                    value={previewMode}
+                    onChange={(event) => setPreviewMode(event.target.value as PreviewMode)}
                   >
-                    Readable
-                  </button>
-                  <button
-                    className={previewMode === "page" ? "active" : ""}
-                    type="button"
-                    aria-pressed={previewMode === "page"}
-                    onClick={() => setPreviewMode("page")}
-                  >
-                    Full page
-                  </button>
-                </div>
+                    <option value="readable">Fit width</option>
+                    <option value="page">Fit page</option>
+                  </select>
+                </label>
                 <button className="secondary-button" onClick={() => window.print()}>
                   Print preview
                 </button>
