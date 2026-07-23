@@ -11,6 +11,7 @@ type SavedPosting = {
   company: string | null;
   title: string;
   role_category: string;
+  raw_text: string;
   match_score: number | null;
   outcome: string;
   created_at: string;
@@ -184,6 +185,7 @@ export default function Home() {
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [hostedPostings, setHostedPostings] = useState<SavedPosting[]>([]);
   const [libraryStatus, setLibraryStatus] = useState<"idle" | "loading" | "ready" | "error">("idle");
+  const [expandedPostingId, setExpandedPostingId] = useState<string | null>(null);
   const [deletingPostingId, setDeletingPostingId] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState("");
   const [previewScale, setPreviewScale] = useState(1);
@@ -301,6 +303,7 @@ export default function Home() {
       });
       if (!response.ok) throw new Error("Delete failed");
       setHostedPostings((current) => current.filter((item) => item.id !== posting.id));
+      setExpandedPostingId((current) => current === posting.id ? null : current);
     } catch {
       setDeleteError("We couldn’t delete that posting. Please try again.");
     } finally {
@@ -599,10 +602,20 @@ export default function Home() {
                 {deleteError && <p className="delete-error" role="status">{deleteError}</p>}
                 {hostedPostings.slice(0, 5).map((posting) => (
                   <article key={posting.id}>
-                    <div><strong>{posting.company || "Company not set"}</strong><p>{posting.title} · {new Date(posting.created_at).toLocaleDateString()}</p></div>
+                    <div className="hosted-save-summary"><strong>{posting.company || "Company not set"}</strong><p>{posting.title} · {new Date(posting.created_at).toLocaleDateString()}</p></div>
                     <div className="hosted-save-actions">
                       <span>{posting.match_score ?? 0}% match</span>
                       <button
+                        className="view-posting-button"
+                        type="button"
+                        aria-expanded={expandedPostingId === posting.id}
+                        aria-controls={`posting-description-${posting.id}`}
+                        onClick={() => setExpandedPostingId((current) => current === posting.id ? null : posting.id)}
+                      >
+                        {expandedPostingId === posting.id ? "Hide JD" : "View JD"}
+                      </button>
+                      <button
+                        className="delete-posting-button"
                         type="button"
                         disabled={deletingPostingId === posting.id}
                         aria-label={`Delete ${posting.title} saved posting`}
@@ -611,6 +624,12 @@ export default function Home() {
                         {deletingPostingId === posting.id ? "Deleting…" : "Delete"}
                       </button>
                     </div>
+                    {expandedPostingId === posting.id && (
+                      <div className="hosted-save-description" id={`posting-description-${posting.id}`}>
+                        <h4>Full job description</h4>
+                        <p>{posting.raw_text}</p>
+                      </div>
+                    )}
                   </article>
                 ))}
               </section>

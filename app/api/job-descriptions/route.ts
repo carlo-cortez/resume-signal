@@ -6,6 +6,7 @@ type StoredJobDescription = {
   company: string | null;
   title: string;
   role_category: string;
+  raw_text: string;
   keywords_json: string[];
   match_score: number | null;
   outcome: string;
@@ -24,7 +25,7 @@ export async function GET() {
 
     const { data, error } = await supabase
       .from("job_descriptions")
-      .select("id, company, title, role_category, keywords_json, match_score, outcome, created_at")
+      .select("id, company, title, role_category, raw_text, keywords_json, match_score, outcome, created_at")
       .eq("user_id", userId)
       .order("created_at", { ascending: false })
       .limit(100);
@@ -80,7 +81,7 @@ export async function POST(request: Request) {
         match_score: matchScore,
         outcome: "applied",
       })
-      .select("id, company, title, role_category, keywords_json, match_score, outcome, created_at")
+      .select("id, company, title, role_category, raw_text, keywords_json, match_score, outcome, created_at")
       .single<StoredJobDescription>();
 
     if (error) throw error;

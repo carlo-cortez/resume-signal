@@ -87,6 +87,7 @@ test("uses Google-only authentication and per-user Supabase persistence", async 
   assert.match(route, /export async function POST/);
   assert.match(route, /export async function DELETE/);
   assert.match(route, /auth\.getClaims\(\)/);
+  assert.match(route, /role_category, raw_text, keywords_json/);
   assert.match(route, /user_id: userId/);
   assert.match(route, /\.delete\(\)/);
   assert.match(route, /\.eq\("id", id\)/);
@@ -111,6 +112,9 @@ test("uses Google-only authentication and per-user Supabase persistence", async 
   assert.doesNotMatch(route, /D1|OAI-Sites-Authorization|localStorage|sessionStorage/);
   assert.match(page, /deleteSavedPosting/);
   assert.match(page, /Delete .* saved posting/);
+  assert.match(page, /View JD/);
+  assert.match(page, /Hide JD/);
+  assert.match(page, /Full job description/);
   await assert.rejects(access(new URL("app/forgot-password/page.tsx", root)));
   await assert.rejects(access(new URL("app/update-password/page.tsx", root)));
   await assert.rejects(access(new URL("app/auth/confirm/route.ts", root)));

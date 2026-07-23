@@ -225,15 +225,21 @@ textarea:focus { border-color: var(--forest); outline: 3px solid rgba(23,79,63,.
 .profile-panel { padding: clamp(24px, 3vw, 38px); border: 1px solid var(--line); border-radius: 14px; background: var(--paper); }
 .hosted-saves { margin-bottom: 28px; padding: 16px; border: 1px solid #a8bcaf; border-radius: 10px; background: #f0f5f0; }
 .hosted-saves > p { margin: 0; color: var(--muted); font-size: 11px; }
-.hosted-saves article { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 9px 0; border-top: 1px solid rgba(23,79,63,.13); }
+.hosted-saves article { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 9px 18px; padding: 9px 0; border-top: 1px solid rgba(23,79,63,.13); }
 .hosted-saves article:first-of-type { border-top: 0; }
 .hosted-saves article strong { font-size: 11px; }
 .hosted-saves article p { margin: 3px 0 0; color: var(--muted); font-size: 9px; }
+.hosted-save-summary { flex: 1 1 220px; }
 .hosted-save-actions { display: flex; align-items: center; gap: 9px; }
 .hosted-save-actions > span { color: var(--forest); font-size: 10px; font-weight: 700; white-space: nowrap; }
-.hosted-save-actions button { border: 1px solid rgba(142,67,37,.28); border-radius: 999px; padding: 5px 8px; color: #8e4325; background: transparent; font-size: 9px; font-weight: 700; }
-.hosted-save-actions button:hover { border-color: #8e4325; background: var(--orange-soft); }
+.hosted-save-actions button { border: 1px solid #a8bcaf; border-radius: 999px; padding: 5px 8px; color: var(--forest); background: transparent; font-size: 9px; font-weight: 700; }
+.hosted-save-actions .view-posting-button:hover { border-color: var(--forest); background: var(--sage); }
+.hosted-save-actions .delete-posting-button { border-color: rgba(142,67,37,.28); color: #8e4325; }
+.hosted-save-actions .delete-posting-button:hover { border-color: #8e4325; background: var(--orange-soft); }
 .hosted-save-actions button:disabled { cursor: wait; opacity: .55; }
+.hosted-save-description { flex: 1 0 100%; max-height: 270px; overflow: auto; margin-top: 3px; padding: 13px 14px; border: 1px solid rgba(23,79,63,.13); border-radius: 8px; background: rgba(255,255,255,.58); }
+.hosted-save-description h4 { margin: 0 0 7px; font-size: 10px; text-transform: uppercase; letter-spacing: .08em; }
+.hosted-saves .hosted-save-description p { margin: 0; color: var(--ink-soft); font-size: 11px; line-height: 1.55; white-space: pre-wrap; }
 .hosted-saves .delete-error { margin-bottom: 8px; color: #8e4325; }
 .profile-heading { display: flex; justify-content: space-between; align-items: start; margin-bottom: 29px; }
 .profile-heading h3 { margin: 0; font: 500 28px/1.1 Georgia, serif; }
