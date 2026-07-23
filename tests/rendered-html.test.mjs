@@ -20,6 +20,8 @@ test("defines the finished Resume Signal product surface", async () => {
   assert.match(page, /Taylor Rivera/);
   assert.match(page, /\+63 900 000 0000/);
   assert.match(page, /portfolio\.example\.com/);
+  assert.match(page, /title="Professional Summary"/);
+  assert.match(page, /Business systems and data analyst experienced in translating stakeholder needs/);
   assert.doesNotMatch(page, /linkedin\.com\/in\/sample-profile/);
   assert.match(page, /Sample Technology Company/);
   assert.match(page, /Sample Financial Services Firm/);
@@ -43,6 +45,7 @@ test("defines the finished Resume Signal product surface", async () => {
   assert.match(page, /Skills & Interests/);
   assert.match(page, /GPA:<\/strong> 3\.70 \/ 4\.00/);
   assert.match(page, /Awards:<\/strong> Dean’s List; Academic Merit Scholarship/);
+  assert.ok(page.indexOf('title="Professional Summary"') < page.indexOf('title="Education"'));
   assert.doesNotMatch(page, /Relevant Coursework|Systems Analysis, Database Management/);
   assert.ok(page.indexOf('title="Education"') < page.indexOf('title="Experience"'));
   assert.ok(page.indexOf('title="Skills & Interests"') < page.indexOf('title="Projects"'));

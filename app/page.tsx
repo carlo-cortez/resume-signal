@@ -520,6 +520,10 @@ export default function Home() {
                   <div className="resume-name">Taylor Rivera</div>
                   <p className="contact">Metro Manila • +63 900 000 0000 • sample@example.com • portfolio.example.com</p>
 
+              <ResumeSection title="Professional Summary">
+                <p className="summary-copy">Business systems and data analyst experienced in translating stakeholder needs into documented requirements, tested workflows, and clear operational reporting. Brings a structured, collaborative approach to process improvement and technology delivery.</p>
+              </ResumeSection>
+
               <ResumeSection title="Education">
                 <div className="resume-entry">
                   <div className="resume-line"><strong>Sample State University</strong><span>Metro Manila, Philippines</span></div>
