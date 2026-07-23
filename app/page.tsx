@@ -521,7 +521,10 @@ export default function Home() {
                   <p className="contact">Metro Manila • +63 900 000 0000 • sample@example.com • portfolio.example.com</p>
 
               <ResumeSection title="Professional Summary">
-                <p className="summary-copy">Business systems and data analyst who translates stakeholder needs into clear requirements, tested workflows, and operational reporting. Brings a structured, collaborative approach to process improvement and technology delivery.</p>
+                <p className="summary-copy">
+                  <span>Business systems and data analyst who turns stakeholder needs into clear requirements and tested workflows.</span>
+                  <span>Collaborative and process-focused, with experience creating practical operational reports.</span>
+                </p>
               </ResumeSection>
 
               <ResumeSection title="Education">

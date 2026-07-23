@@ -21,7 +21,9 @@ test("defines the finished Resume Signal product surface", async () => {
   assert.match(page, /\+63 900 000 0000/);
   assert.match(page, /portfolio\.example\.com/);
   assert.match(page, /title="Professional Summary"/);
-  assert.match(page, /Business systems and data analyst who translates stakeholder needs/);
+  assert.match(page, /Business systems and data analyst who turns stakeholder needs/);
+  assert.match(page, /Collaborative and process-focused, with experience creating practical operational reports/);
+  assert.match(stylesheet, /\.summary-copy span \{ display: block; white-space: nowrap; \}/);
   assert.doesNotMatch(page, /linkedin\.com\/in\/sample-profile/);
   assert.match(page, /Sample Technology Company/);
   assert.match(page, /Sample Financial Services Firm/);

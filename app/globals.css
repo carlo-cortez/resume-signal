@@ -204,6 +204,7 @@ textarea:focus { border-color: var(--forest); outline: 3px solid rgba(23,79,63,.
 .resume-role li { margin: 0 0 2px; padding-left: 2px; line-height: 1.25; }
 .paper mark { padding: 0; color: inherit; background: transparent; border-bottom: 1px dotted #555; }
 .summary-copy { margin: 0; line-height: 1.22; }
+.summary-copy span { display: block; white-space: nowrap; }
 .skill-line { margin: 1px 0 0; line-height: 1.15; }
 .preview-legend { display: flex; flex-wrap: wrap; gap: 17px; margin-top: 15px; color: var(--muted); font-size: 10px; }
 .preview-legend span { display: inline-flex; align-items: center; gap: 6px; }
