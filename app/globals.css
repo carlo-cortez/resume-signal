@@ -229,7 +229,12 @@ textarea:focus { border-color: var(--forest); outline: 3px solid rgba(23,79,63,.
 .hosted-saves article:first-of-type { border-top: 0; }
 .hosted-saves article strong { font-size: 11px; }
 .hosted-saves article p { margin: 3px 0 0; color: var(--muted); font-size: 9px; }
-.hosted-saves article > span { color: var(--forest); font-size: 10px; font-weight: 700; white-space: nowrap; }
+.hosted-save-actions { display: flex; align-items: center; gap: 9px; }
+.hosted-save-actions > span { color: var(--forest); font-size: 10px; font-weight: 700; white-space: nowrap; }
+.hosted-save-actions button { border: 1px solid rgba(142,67,37,.28); border-radius: 999px; padding: 5px 8px; color: #8e4325; background: transparent; font-size: 9px; font-weight: 700; }
+.hosted-save-actions button:hover { border-color: #8e4325; background: var(--orange-soft); }
+.hosted-save-actions button:disabled { cursor: wait; opacity: .55; }
+.hosted-saves .delete-error { margin-bottom: 8px; color: #8e4325; }
 .profile-heading { display: flex; justify-content: space-between; align-items: start; margin-bottom: 29px; }
 .profile-heading h3 { margin: 0; font: 500 28px/1.1 Georgia, serif; }
 .profile-heading > span { padding: 6px 8px; border-radius: 99px; color: #8e4325; background: var(--orange-soft); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; }

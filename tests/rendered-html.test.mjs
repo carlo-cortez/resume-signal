@@ -58,7 +58,7 @@ test("defines the finished Resume Signal product surface", async () => {
 });
 
 test("uses Google-only authentication and per-user Supabase persistence", async () => {
-  const [database, migration, ownershipMigration, route, environmentExample, serverClient, proxy, sessionProxy, login, register, authActions, authShell] = await Promise.all([
+  const [database, migration, ownershipMigration, route, environmentExample, serverClient, proxy, sessionProxy, login, register, authActions, authShell, page] = await Promise.all([
     readFile(new URL("db/supabase.ts", root), "utf8"),
     readFile(new URL("supabase/migrations/20260721000000_create_job_descriptions.sql", root), "utf8"),
     readFile(new URL("supabase/migrations/20260721010000_add_user_ownership.sql", root), "utf8"),
@@ -71,6 +71,7 @@ test("uses Google-only authentication and per-user Supabase persistence", async 
     readFile(new URL("app/register/page.tsx", root), "utf8"),
     readFile(new URL("app/auth/actions.ts", root), "utf8"),
     readFile(new URL("app/auth/auth-shell.tsx", root), "utf8"),
+    readFile(new URL("app/page.tsx", root), "utf8"),
   ]);
 
   assert.match(database, /SUPABASE_SECRET_KEY/);
@@ -84,8 +85,12 @@ test("uses Google-only authentication and per-user Supabase persistence", async 
   assert.match(ownershipMigration, /to authenticated/);
   assert.match(route, /export async function GET/);
   assert.match(route, /export async function POST/);
+  assert.match(route, /export async function DELETE/);
   assert.match(route, /auth\.getClaims\(\)/);
   assert.match(route, /user_id: userId/);
+  assert.match(route, /\.delete\(\)/);
+  assert.match(route, /\.eq\("id", id\)/);
+  assert.match(route, /\.eq\("user_id", userId\)/);
   assert.doesNotMatch(route, /getSupabaseAdmin/);
   assert.match(environmentExample, /SUPABASE_URL=/);
   assert.match(environmentExample, /SUPABASE_PUBLISHABLE_KEY=/);
@@ -104,6 +109,8 @@ test("uses Google-only authentication and per-user Supabase persistence", async 
   assert.doesNotMatch(authShell, /Supabase|authentication|row-level/);
   assert.doesNotMatch(route, /Authentication required/);
   assert.doesNotMatch(route, /D1|OAI-Sites-Authorization|localStorage|sessionStorage/);
+  assert.match(page, /deleteSavedPosting/);
+  assert.match(page, /Delete .* saved posting/);
   await assert.rejects(access(new URL("app/forgot-password/page.tsx", root)));
   await assert.rejects(access(new URL("app/update-password/page.tsx", root)));
   await assert.rejects(access(new URL("app/auth/confirm/route.ts", root)));

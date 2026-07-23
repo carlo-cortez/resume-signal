@@ -184,6 +184,8 @@ export default function Home() {
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [hostedPostings, setHostedPostings] = useState<SavedPosting[]>([]);
   const [libraryStatus, setLibraryStatus] = useState<"idle" | "loading" | "ready" | "error">("idle");
+  const [deletingPostingId, setDeletingPostingId] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState("");
   const [previewScale, setPreviewScale] = useState(1);
   const [previewMode, setPreviewMode] = useState<PreviewMode>("readable");
   const previewFrameRef = useRef<HTMLDivElement>(null);
@@ -283,6 +285,26 @@ export default function Home() {
       setSaveStatus("saved");
     } catch {
       setSaveStatus("error");
+    }
+  }
+
+  async function deleteSavedPosting(posting: SavedPosting) {
+    const label = posting.company ? `${posting.title} at ${posting.company}` : posting.title;
+    if (!window.confirm(`Delete ${label}? This cannot be undone.`)) return;
+
+    setDeletingPostingId(posting.id);
+    setDeleteError("");
+
+    try {
+      const response = await fetch(`/api/job-descriptions?id=${encodeURIComponent(posting.id)}`, {
+        method: "DELETE",
+      });
+      if (!response.ok) throw new Error("Delete failed");
+      setHostedPostings((current) => current.filter((item) => item.id !== posting.id));
+    } catch {
+      setDeleteError("We couldn’t delete that posting. Please try again.");
+    } finally {
+      setDeletingPostingId(null);
     }
   }
 
@@ -574,10 +596,21 @@ export default function Home() {
                 {libraryStatus === "loading" && <p>Loading your saved scans…</p>}
                 {libraryStatus === "error" && <p>We couldn’t load your saved scans. Please try again.</p>}
                 {libraryStatus === "ready" && !hostedPostings.length && <p>No saved scans yet. Save a result from the Scan & build tab.</p>}
+                {deleteError && <p className="delete-error" role="status">{deleteError}</p>}
                 {hostedPostings.slice(0, 5).map((posting) => (
                   <article key={posting.id}>
                     <div><strong>{posting.company || "Company not set"}</strong><p>{posting.title} · {new Date(posting.created_at).toLocaleDateString()}</p></div>
-                    <span>{posting.match_score ?? 0}% match</span>
+                    <div className="hosted-save-actions">
+                      <span>{posting.match_score ?? 0}% match</span>
+                      <button
+                        type="button"
+                        disabled={deletingPostingId === posting.id}
+                        aria-label={`Delete ${posting.title} saved posting`}
+                        onClick={() => deleteSavedPosting(posting)}
+                      >
+                        {deletingPostingId === posting.id ? "Deleting…" : "Delete"}
+                      </button>
+                    </div>
                   </article>
                 ))}
               </section>

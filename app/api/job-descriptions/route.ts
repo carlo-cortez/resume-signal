@@ -92,3 +92,36 @@ export async function POST(request: Request) {
     );
   }
 }
+
+export async function DELETE(request: Request) {
+  try {
+    const supabase = await createSupabaseServerClient();
+    const { data: identity, error: authError } = await supabase.auth.getClaims();
+    const userId = identity?.claims?.sub;
+
+    if (authError || !userId) {
+      return NextResponse.json({ error: "Please sign in to continue." }, { status: 401 });
+    }
+
+    const id = new URL(request.url).searchParams.get("id")?.trim() ?? "";
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id);
+
+    if (!isUuid) {
+      return NextResponse.json({ error: "A valid saved posting ID is required." }, { status: 400 });
+    }
+
+    const { error } = await supabase
+      .from("job_descriptions")
+      .delete()
+      .eq("id", id)
+      .eq("user_id", userId);
+
+    if (error) throw error;
+    return new NextResponse(null, { status: 204 });
+  } catch {
+    return NextResponse.json(
+      { error: "Unable to delete this saved posting." },
+      { status: 503 },
+    );
+  }
+}
