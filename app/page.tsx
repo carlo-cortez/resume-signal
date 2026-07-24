@@ -1,6 +1,9 @@
 "use client";
 
 import { CSSProperties, ChangeEvent, useEffect, useMemo, useRef, useState } from "react";
+import { sampleResume } from "@/lib/resume/sample";
+import { applyResumeSuggestion } from "@/lib/resume/text";
+import type { Resume, ResumeSuggestion, ScoreResult } from "@/types/resume";
 
 type Tab = "scan" | "library";
 type Resolution = "accepted" | "rejected";
@@ -12,17 +15,10 @@ type SavedPosting = {
   title: string;
   role_category: string;
   raw_text: string;
+  keywords_json: string[];
   match_score: number | null;
   outcome: string;
   created_at: string;
-};
-
-type Suggestion = {
-  keyword: string;
-  original: string;
-  revised: string;
-  reason: string;
-  flag?: "verify claim" | "high JD overlap";
 };
 
 type RoleProfile = {
@@ -33,83 +29,11 @@ type RoleProfile = {
   postings: { company: string; role: string; date: string; outcome: string }[];
 };
 
-const resumeKeywords = [
-  "requirements",
-  "stakeholder management",
-  "uat",
-  "power bi",
-  "sql",
-  "workflow automation",
-  "data analysis",
-];
-
-const keywordCandidates = [
-  "requirements",
-  "stakeholder management",
-  "uat",
-  "power bi",
-  "sql",
-  "workflow automation",
-  "data analysis",
-  "agile",
-  "jira",
-  "bpmn",
-  "process improvement",
-  "product backlog",
-  "user stories",
-  "scrum",
-  "confluence",
-];
-
 const sampleJobDescription = `We are looking for a Business Analyst to partner with cross-functional stakeholders and translate business requirements into clear user stories. The role will facilitate Agile ceremonies, maintain delivery documentation in Jira and Confluence, support UAT, and use SQL and Power BI to validate findings. Experience with process improvement and BPMN is preferred.`;
 
 const letterPageWidth = 816;
 const letterPageHeight = 1056;
 const previewChromeHeight = 180;
-
-const suggestionBank: Record<string, Suggestion> = {
-  agile: {
-    keyword: "Agile",
-    original: "Gathered and documented requirements from cross-functional stakeholders.",
-    revised: "Facilitated requirements refinement within Agile delivery cycles, aligning cross-functional stakeholders on scope and acceptance criteria.",
-    reason: "Names the delivery context already implied by your requirements work.",
-    flag: "verify claim",
-  },
-  jira: {
-    keyword: "Jira",
-    original: "Led UAT cycles and coordinated defect resolution before release.",
-    revised: "Led UAT cycles, tracking defects and release decisions in Jira through closure.",
-    reason: "Makes the tool visible to ATS scanners without changing the core achievement.",
-    flag: "verify claim",
-  },
-  bpmn: {
-    keyword: "BPMN",
-    original: "Documented system workflows and proposed process enhancements.",
-    revised: "Mapped current and future-state workflows in BPMN to clarify process gaps and proposed enhancements.",
-    reason: "Adds a specific method where your existing workflow work may support it.",
-    flag: "verify claim",
-  },
-  "process improvement": {
-    keyword: "Process improvement",
-    original: "Automated recurring manual processes, reducing turnaround time.",
-    revised: "Delivered process improvements through workflow automation, reducing recurring manual effort and turnaround time.",
-    reason: "Uses the employer's concept, but keeps the claim grounded in your original bullet.",
-  },
-  "user stories": {
-    keyword: "User stories",
-    original: "Gathered and documented requirements from cross-functional stakeholders.",
-    revised: "Translated stakeholder requirements into user stories with testable acceptance criteria.",
-    reason: "Makes the output of your requirements work explicit.",
-    flag: "verify claim",
-  },
-  confluence: {
-    keyword: "Confluence",
-    original: "Maintained project documentation for system enhancements.",
-    revised: "Maintained decision logs and system documentation in Confluence for cross-functional delivery teams.",
-    reason: "Adds the requested documentation tool only if it reflects your actual work.",
-    flag: "verify claim",
-  },
-};
 
 const roleCategoryOptions = [
   "Business Analyst",
@@ -121,91 +45,6 @@ const roleCategoryOptions = [
   "QA / UAT Analyst",
 ];
 
-const roleProfiles: RoleProfile[] = [
-  {
-    name: "Business Analyst",
-    subtitle: "4 postings saved",
-    core: [
-      { term: "Stakeholders", frequency: 100 },
-      { term: "Requirements", frequency: 100 },
-      { term: "Agile", frequency: 75 },
-      { term: "UAT", frequency: 75 },
-    ],
-    variable: [
-      { term: "BPMN", frequency: 50 },
-      { term: "Power BI", frequency: 25 },
-      { term: "SQL", frequency: 25 },
-    ],
-    postings: [
-      { company: "Northstar Bank", role: "Reporting & Analytics BA", date: "Jul 12", outcome: "interview" },
-      { company: "Brightpath Consulting", role: "Business Technology Analyst", date: "Jul 08", outcome: "applied" },
-      { company: "Atlas Systems", role: "Process Transformation Analyst", date: "Jun 28", outcome: "applied" },
-      { company: "Harbor Finance", role: "Business Analyst", date: "Jun 18", outcome: "closed" },
-    ],
-  },
-  {
-    name: "Product Owner",
-    subtitle: "2 postings saved",
-    core: [
-      { term: "Backlog", frequency: 100 },
-      { term: "User stories", frequency: 100 },
-      { term: "Roadmap", frequency: 50 },
-    ],
-    variable: [
-      { term: "Analytics", frequency: 50 },
-      { term: "Fintech", frequency: 50 },
-    ],
-    postings: [
-      { company: "PocketPay", role: "Associate Product Owner", date: "Jul 02", outcome: "applied" },
-      { company: "Nova Wallet", role: "Product Owner", date: "Jun 20", outcome: "closed" },
-    ],
-  },
-  {
-    name: "Data / Reporting",
-    subtitle: "1 posting saved",
-    core: [
-      { term: "SQL", frequency: 100 },
-      { term: "Power BI", frequency: 100 },
-      { term: "Dashboards", frequency: 100 },
-    ],
-    variable: [
-      { term: "Python", frequency: 100 },
-      { term: "DAX", frequency: 100 },
-    ],
-    postings: [
-      { company: "Summit Financial", role: "Reporting Analyst", date: "Jun 10", outcome: "applied" },
-    ],
-  },
-  {
-    name: "Systems Analyst",
-    subtitle: "No postings saved",
-    core: [],
-    variable: [],
-    postings: [],
-  },
-  {
-    name: "Project Coordinator",
-    subtitle: "No postings saved",
-    core: [],
-    variable: [],
-    postings: [],
-  },
-  {
-    name: "Operations Analyst",
-    subtitle: "No postings saved",
-    core: [],
-    variable: [],
-    postings: [],
-  },
-  {
-    name: "QA / UAT Analyst",
-    subtitle: "No postings saved",
-    core: [],
-    variable: [],
-    postings: [],
-  },
-];
-
 function titleCase(value: string) {
   return value.replace(/\b\w/g, (character) => character.toUpperCase());
 }
@@ -214,7 +53,16 @@ export default function Home() {
   const [tab, setTab] = useState<Tab>("scan");
   const [jobDescription, setJobDescription] = useState("");
   const [resumeFile, setResumeFile] = useState("");
+  const [resume, setResume] = useState<Resume>(sampleResume);
+  const [resumeId, setResumeId] = useState<string | null>(null);
+  const [resumeVersionId, setResumeVersionId] = useState<string | null>(null);
+  const [versionStatus, setVersionStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const [parseStatus, setParseStatus] = useState<"idle" | "parsing" | "ready" | "error">("idle");
+  const [parseMessage, setParseMessage] = useState("");
+  const [analysis, setAnalysis] = useState<ScoreResult | null>(null);
+  const [scanError, setScanError] = useState("");
   const [company, setCompany] = useState("");
+  const [roleTitle, setRoleTitle] = useState("");
   const [roleCategory, setRoleCategory] = useState("Business Analyst");
   const [hasScanned, setHasScanned] = useState(false);
   const [isScanning, setIsScanning] = useState(false);
@@ -228,30 +76,45 @@ export default function Home() {
   const [deleteError, setDeleteError] = useState("");
   const [previewScale, setPreviewScale] = useState(1);
   const [previewMode, setPreviewMode] = useState<PreviewMode>("readable");
+  const [showEditor, setShowEditor] = useState(false);
   const previewFrameRef = useRef<HTMLDivElement>(null);
 
-  const detectedKeywords = useMemo(() => {
-    const normalized = jobDescription.toLowerCase();
-    return keywordCandidates.filter((keyword) => normalized.includes(keyword));
-  }, [jobDescription]);
-
-  const matchedKeywords = detectedKeywords.filter((keyword) =>
-    resumeKeywords.some(
-      (resumeKeyword) =>
-        keyword.includes(resumeKeyword) || resumeKeyword.includes(keyword),
-    ),
-  );
-  const missingKeywords = detectedKeywords.filter(
-    (keyword) => !matchedKeywords.includes(keyword),
-  );
-  const matchScore = detectedKeywords.length
-    ? Math.round((matchedKeywords.length / detectedKeywords.length) * 100)
-    : 0;
-  const suggestions = missingKeywords
-    .map((keyword) => suggestionBank[keyword])
-    .filter(Boolean)
-    .slice(0, 4);
-  const activeProfile = roleProfiles[profileIndex];
+  const matchedKeywords = analysis?.matchedKeywords ?? [];
+  const missingKeywords = analysis?.missingKeywords ?? [];
+  const matchScore = analysis?.matchScore ?? 0;
+  const suggestions = analysis?.suggestions ?? [];
+  const roleProfiles = useMemo<RoleProfile[]>(() => roleCategoryOptions.map((name) => {
+    const postings = hostedPostings.filter((posting) => posting.role_category === name);
+    const counts = new Map<string, number>();
+    for (const posting of postings) {
+      for (const keyword of new Set(posting.keywords_json ?? [])) {
+        const normalized = keyword.toLowerCase();
+        counts.set(normalized, (counts.get(normalized) ?? 0) + 1);
+      }
+    }
+    const frequencies = [...counts.entries()]
+      .map(([term, count]) => ({ term: titleCase(term), frequency: Math.round((count / postings.length) * 100) }))
+      .sort((a, b) => b.frequency - a.frequency || a.term.localeCompare(b.term));
+    return {
+      name,
+      subtitle: postings.length ? `${postings.length} posting${postings.length === 1 ? "" : "s"} saved` : "No postings saved",
+      core: frequencies.filter((item) => item.frequency >= 50),
+      variable: frequencies.filter((item) => item.frequency < 50),
+      postings: postings.map((posting) => ({
+        company: posting.company || "Company not set",
+        role: posting.title,
+        date: new Date(posting.created_at).toLocaleDateString(undefined, { month: "short", day: "numeric" }),
+        outcome: posting.outcome,
+      })),
+    };
+  }), [hostedPostings]);
+  const activeProfile = roleProfiles[profileIndex] ?? roleProfiles[0];
+  const contactLine = [
+    resume.contact.location,
+    resume.contact.phone,
+    resume.contact.email,
+    resume.contact.linkedin || resume.contact.website,
+  ].filter(Boolean).join(" • ");
 
   useEffect(() => {
     if (tab !== "library") return;
@@ -288,20 +151,72 @@ export default function Home() {
     };
   }, [previewMode]);
 
-  function handleFile(event: ChangeEvent<HTMLInputElement>) {
+  async function handleFile(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     setResumeFile(file?.name ?? "");
     setHasScanned(false);
+    setAnalysis(null);
+    setParseMessage("");
+    if (!file) {
+      setParseStatus("idle");
+      return;
+    }
+    setParseStatus("parsing");
+    const form = new FormData();
+    form.set("resume", file);
+    try {
+      const response = await fetch("/api/resumes/parse", { method: "POST", body: form });
+      const data = await response.json() as {
+        error?: string;
+        resume?: Resume;
+        extractedText?: string;
+        versionId?: string | null;
+        resumeId?: string | null;
+        analysisMode?: "local" | "semantic";
+        persistence?: "saved" | "migration_required";
+      };
+      if (!response.ok || !data.resume || !data.extractedText) throw new Error(data.error || "Unable to parse this resume.");
+      setResume(data.resume);
+      setResumeId(data.resumeId ?? null);
+      setResumeVersionId(data.versionId ?? null);
+      setParseStatus("ready");
+      setParseMessage(
+        `${data.analysisMode === "semantic" ? "Structured analysis" : "Local extraction"} complete` +
+        (data.persistence === "saved" ? " and saved." : ". Database migration is still required for version history."),
+      );
+    } catch (error) {
+      setParseStatus("error");
+      setParseMessage(error instanceof Error ? error.message : "Unable to parse this resume.");
+    }
   }
 
-  function runScan() {
+  async function runScan() {
     if (!jobDescription.trim()) return;
     setIsScanning(true);
+    setScanError("");
     setResolutions({});
-    window.setTimeout(() => {
+    try {
+      const response = await fetch("/api/scans", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          resume,
+          versionId: resumeVersionId,
+          jobDescription,
+          company,
+          roleCategory,
+        }),
+      });
+      const data = await response.json() as ScoreResult & { error?: string };
+      if (!response.ok) throw new Error(data.error || "Scan failed.");
+      setAnalysis(data);
       setHasScanned(true);
+    } catch (error) {
+      setScanError(error instanceof Error ? error.message : "Unable to run this scan.");
+      setHasScanned(false);
+    } finally {
       setIsScanning(false);
-    }, 650);
+    }
   }
 
   async function saveJobDescription() {
@@ -312,10 +227,10 @@ export default function Home() {
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           company,
-          title: roleCategory,
+          title: roleTitle.trim() || roleCategory,
           roleCategory,
           rawText: jobDescription,
-          keywords: detectedKeywords,
+          keywords: [...matchedKeywords, ...missingKeywords],
           matchScore,
         }),
       });
@@ -347,6 +262,50 @@ export default function Home() {
     } finally {
       setDeletingPostingId(null);
     }
+  }
+
+  function acceptSuggestion(suggestion: ResumeSuggestion) {
+    setResume((current) => applyResumeSuggestion(current, suggestion.targetPath, suggestion.revised));
+    setResolutions((current) => ({ ...current, [suggestion.keyword]: "accepted" }));
+  }
+
+  async function downloadDocx() {
+    const response = await fetch("/api/exports/docx", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(resume),
+    });
+    if (!response.ok) {
+      setScanError("We couldn’t create the DOCX export. Please try again.");
+      return;
+    }
+    const blob = await response.blob();
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = `${resume.contact.name || "resume"}.docx`;
+    anchor.click();
+    URL.revokeObjectURL(url);
+  }
+
+  async function saveResumeVersion() {
+    if (!resumeId) {
+      setVersionStatus("error");
+      return;
+    }
+    setVersionStatus("saving");
+    const response = await fetch("/api/resumes/versions", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ resumeId, resume }),
+    });
+    if (!response.ok) {
+      setVersionStatus("error");
+      return;
+    }
+    const data = await response.json() as { id: string };
+    setResumeVersionId(data.id);
+    setVersionStatus("saved");
   }
 
   return (
@@ -393,7 +352,7 @@ export default function Home() {
           Scan & build
         </button>
         <button className={tab === "library" ? "active" : ""} onClick={() => { setLibraryStatus("loading"); setTab("library"); }}>
-          JD library <span>7</span>
+          JD library <span>{hostedPostings.length}</span>
         </button>
         <button disabled title="Planned for a later phase">
           Interview prep <span>soon</span>
@@ -413,13 +372,14 @@ export default function Home() {
               </div>
 
               <label className={`upload-zone ${resumeFile ? "has-file" : ""}`}>
-                <input type="file" accept=".pdf,.doc,.docx" onChange={handleFile} />
+                <input type="file" accept=".pdf,.docx" onChange={handleFile} disabled={parseStatus === "parsing"} />
                 <span className="upload-icon" aria-hidden="true">↑</span>
                 <span>
                   <strong>{resumeFile || "Choose a resume"}</strong>
-                  <small>{resumeFile ? "Ready for the demo scan" : "PDF or DOCX · stays in this browser demo"}</small>
+                  <small>{parseStatus === "parsing" ? "Reading your resume…" : "PDF or DOCX · original file is not retained"}</small>
                 </span>
               </label>
+              {parseMessage && <p className={`parse-status ${parseStatus}`} role="status">{parseMessage}</p>}
 
               <div className="field-label-row">
                 <label htmlFor="job-description">Job description</label>
@@ -431,6 +391,10 @@ export default function Home() {
                 <label>
                   <span>Company</span>
                   <input value={company} onChange={(event) => setCompany(event.target.value)} placeholder="e.g. Northstar Bank" />
+                </label>
+                <label>
+                  <span>Role title</span>
+                  <input value={roleTitle} onChange={(event) => setRoleTitle(event.target.value)} placeholder="e.g. Business Systems Analyst" />
                 </label>
                 <label>
                   <span>Role category</span>
@@ -449,14 +413,15 @@ export default function Home() {
                 }}
                 placeholder="Paste the full job description here…"
               />
-              <button className="primary-button" onClick={runScan} disabled={!jobDescription.trim() || isScanning}>
-                {isScanning ? "Comparing language…" : "Run ATS scan"}
+              <button className="primary-button" onClick={runScan} disabled={!jobDescription.trim() || isScanning || parseStatus !== "ready"}>
+                {isScanning ? "Comparing language…" : parseStatus === "ready" ? "Run ATS scan" : "Upload resume to scan"}
                 <span aria-hidden="true">→</span>
               </button>
               <p className="demo-note">
-                Prototype mode uses keyword matching. File parsing and semantic scoring
-                connect later through a server-side API.
+                Scores use the resume shown in the preview. Semantic suggestions activate
+                when a server-side analysis key is configured.
               </p>
+              {scanError && <p className="save-error" role="alert">{scanError}</p>}
             </div>
 
             {hasScanned ? (
@@ -470,7 +435,7 @@ export default function Home() {
                 </div>
                 <div className="score-grid">
                   <div className="score-card good">
-                    <strong>94</strong><span>/100</span>
+                    <strong>{analysis?.formattingScore ?? 0}</strong><span>/100</span>
                     <p>Format health</p>
                   </div>
                   <div className="score-card gap">
@@ -507,7 +472,7 @@ export default function Home() {
                           <p className="resolution">Marked {resolution}. You can revisit this decision anytime.</p>
                         ) : (
                           <div className="suggestion-actions">
-                            <button onClick={() => setResolutions((current) => ({ ...current, [suggestion.keyword]: "accepted" }))}>Accept</button>
+                            <button onClick={() => acceptSuggestion(suggestion)} disabled={!suggestion.targetPath}>Accept</button>
                             <button onClick={() => setResolutions((current) => ({ ...current, [suggestion.keyword]: "rejected" }))}>Reject</button>
                           </div>
                         )}
@@ -527,10 +492,13 @@ export default function Home() {
           <section className="preview-column">
             <div className="preview-header">
               <div>
-                <p className="eyebrow">Live document preview</p>
+                <p className="eyebrow">{parseStatus === "ready" ? "Your document preview" : "Sample document preview"}</p>
                 <h2>Harvard-style resume</h2>
               </div>
               <div className="preview-actions">
+                <button className="secondary-button" onClick={() => setShowEditor((current) => !current)} disabled={parseStatus !== "ready"}>
+                  {showEditor ? "Close editor" : "Edit content"}
+                </button>
                 <label className="preview-view-control">
                   <span>View</span>
                   <select
@@ -542,10 +510,53 @@ export default function Home() {
                   </select>
                 </label>
                 <button className="secondary-button" onClick={() => window.print()}>
-                  Print preview
+                  Print / Save PDF
+                </button>
+                <button className="secondary-button" onClick={downloadDocx} disabled={parseStatus !== "ready"}>Download DOCX</button>
+                <button className="secondary-button" onClick={saveResumeVersion} disabled={!resumeId || versionStatus === "saving"}>
+                  {versionStatus === "saving" ? "Saving…" : versionStatus === "saved" ? "Version saved" : "Save version"}
                 </button>
               </div>
             </div>
+            {showEditor && (
+              <section className="resume-editor" aria-label="Resume content editor">
+                <div className="editor-grid">
+                  {(["name", "email", "phone", "location", "website"] as const).map((field) => (
+                    <label key={field}>
+                      <span>{titleCase(field)}</span>
+                      <input
+                        value={resume.contact[field]}
+                        onChange={(event) => setResume((current) => ({
+                          ...current,
+                          contact: { ...current.contact, [field]: event.target.value },
+                        }))}
+                      />
+                    </label>
+                  ))}
+                </div>
+                <label>
+                  <span>Professional summary</span>
+                  <textarea value={resume.summary} onChange={(event) => setResume((current) => ({ ...current, summary: event.target.value }))} />
+                </label>
+                {resume.experience.map((role, roleIndex) => (
+                  <fieldset key={`${role.organization}-${roleIndex}`}>
+                    <legend>{role.title || role.organization || `Experience ${roleIndex + 1}`}</legend>
+                    {role.bullets.map((bullet, bulletIndex) => (
+                      <textarea
+                        key={bulletIndex}
+                        value={bullet}
+                        aria-label={`Experience ${roleIndex + 1} bullet ${bulletIndex + 1}`}
+                        onChange={(event) => setResume((current) => {
+                          const next = structuredClone(current);
+                          next.experience[roleIndex].bullets[bulletIndex] = event.target.value;
+                          return next;
+                        })}
+                      />
+                    ))}
+                  </fieldset>
+                ))}
+              </section>
+            )}
             <div
               className="paper-frame"
               ref={previewFrameRef}
@@ -553,64 +564,79 @@ export default function Home() {
             >
               <div className="paper-stage">
                 <div className="paper">
-                  <div className="resume-name">Taylor Rivera</div>
-                  <p className="contact">Metro Manila • +63 900 000 0000 • sample@example.com • portfolio.example.com</p>
+                  <div className="resume-name">{resume.contact.name || "Your Name"}</div>
+                  <p className="contact">{contactLine || "Add your contact details"}</p>
 
-              <ResumeSection title="Professional Summary">
-                <p className="summary-copy">
-                  <span>Business systems and data analyst who turns stakeholder needs into clear requirements and tested workflows.</span>
-                  <span>Collaborative and process-focused, with experience creating practical operational reports.</span>
-                </p>
-              </ResumeSection>
+                  {resume.summary && (
+                    <ResumeSection title="Professional Summary">
+                      <p className="summary-copy">{resume.summary}</p>
+                    </ResumeSection>
+                  )}
 
-              <ResumeSection title="Education">
-                <div className="resume-entry">
-                  <div className="resume-line"><strong>Sample State University</strong><span>Metro Manila, Philippines</span></div>
-                  <div className="resume-line"><span>BS Information Technology · <strong>GPA:</strong> 3.70 / 4.00</span><span>2020</span></div>
-                  <div className="education-details">
-                    <p><strong>Awards:</strong> Dean’s List; Academic Merit Scholarship</p>
-                  </div>
-                </div>
-              </ResumeSection>
+                  {resume.education.length > 0 && (
+                    <ResumeSection title="Education">
+                      {resume.education.map((item, index) => (
+                        <div className="resume-entry" key={`${item.school}-${index}`}>
+                          <div className="resume-line"><strong>{item.school}</strong><span>{item.location}</span></div>
+                          <div className="resume-line">
+                            <span>{item.degree}{item.gpa && <> · <strong>GPA:</strong> {item.gpa}</>}</span>
+                            <span>{item.graduationDate}</span>
+                          </div>
+                          {item.awards.length > 0 && <div className="education-details"><p><strong>Awards:</strong> {item.awards.join("; ")}</p></div>}
+                        </div>
+                      ))}
+                    </ResumeSection>
+                  )}
 
-              <ResumeSection title="Experience">
-                <ResumeRole organization="Sample Technology Company" location="Metro Manila, Philippines" title="Business Systems Analyst" date="Jan 2022 – Present">
-                  <li>Documented <mark>requirements</mark> with cross-functional <mark>stakeholders</mark> for a sample internal platform.</li>
-                  <li>Coordinated <mark>UAT</mark>, test evidence, and issue resolution before demonstration releases.</li>
-                  <li>Created example <mark>Power BI</mark> dashboards for operational reporting exercises.</li>
-                  <li>Mapped a fictional approval workflow and proposed process improvements.</li>
-                  <li>Used <mark>SQL</mark> to validate sample datasets and reconcile reporting outputs.</li>
-                </ResumeRole>
-                <ResumeRole organization="Sample Financial Services Firm" location="Metro Manila, Philippines" title="Data Analytics Intern" date="Jun 2021 – Dec 2021">
-                  <li>Cleaned and reconciled sample operational data for weekly reporting and quality checks.</li>
-                  <li>Built spreadsheet summaries that highlighted volume trends and recurring service issues.</li>
-                </ResumeRole>
-              </ResumeSection>
+                  {resume.experience.length > 0 && (
+                    <ResumeSection title="Experience">
+                      {resume.experience.map((role, index) => (
+                        <ResumeRole
+                          key={`${role.organization}-${role.title}-${index}`}
+                          organization={role.organization}
+                          location={role.location}
+                          title={role.title}
+                          date={[role.startDate, role.endDate].filter(Boolean).join(" - ")}
+                        >
+                          {role.bullets.map((bullet, bulletIndex) => <li key={bulletIndex}>{bullet}</li>)}
+                        </ResumeRole>
+                      ))}
+                    </ResumeSection>
+                  )}
 
-              <ResumeSection title="Leadership & Activities">
-                <ResumeRole organization="Community Innovation Project" location="Remote" title="Project Coordinator" date="Jun 2020 – Dec 2021">
-                  <li>Coordinated schedules, action logs, status reports, and demonstration workshops for a fictional project team.</li>
-                </ResumeRole>
-                <ResumeRole organization="University Technology Society" location="Metro Manila, Philippines" title="Programs Lead" date="Aug 2019 – May 2020">
-                  <li>Led volunteers delivering peer workshops and technology events, tracking plans, speakers, and participant feedback.</li>
-                </ResumeRole>
-              </ResumeSection>
+                  {resume.leadership.length > 0 && (
+                    <ResumeSection title="Leadership & Activities">
+                      {resume.leadership.map((role, index) => (
+                        <ResumeRole
+                          key={`${role.organization}-${role.title}-${index}`}
+                          organization={role.organization}
+                          location={role.location}
+                          title={role.title}
+                          date={[role.startDate, role.endDate].filter(Boolean).join(" - ")}
+                        >
+                          {role.bullets.map((bullet, bulletIndex) => <li key={bulletIndex}>{bullet}</li>)}
+                        </ResumeRole>
+                      ))}
+                    </ResumeSection>
+                  )}
 
-              <ResumeSection title="Skills & Interests">
-                <p className="skill-line"><strong>Technical:</strong> Requirements Analysis, SQL, Data Visualization, UAT, Process Mapping</p>
-                <p className="skill-line"><strong>Tools:</strong> Power BI, Jira, Confluence, Spreadsheet Applications</p>
-                <p className="skill-line"><strong>Methods:</strong> Agile, User Stories, Process Improvement, Requirements Documentation</p>
-                <p className="skill-line"><strong>Interests:</strong> Workflow Design, Community Technology, Visual Communication</p>
-              </ResumeSection>
+                  {resume.skills.length > 0 && (
+                    <ResumeSection title="Skills & Interests">
+                      {resume.skills.map((group) => (
+                        <p className="skill-line" key={group.label}><strong>{group.label}:</strong> {group.items.join(", ")}</p>
+                      ))}
+                    </ResumeSection>
+                  )}
 
-              <ResumeSection title="Projects">
-                <ResumeProject name="Operations Dashboard Prototype" date="2021">
-                  <li>Built a sample Power BI dashboard that summarized service trends, validated source data, and documented repeatable reporting assumptions.</li>
-                </ResumeProject>
-                <ResumeProject name="Service Request Workflow Redesign" date="2020">
-                  <li>Mapped a sample request process, identified handoff delays, and prototyped a simplified workflow with documented UAT scenarios.</li>
-                </ResumeProject>
-              </ResumeSection>
+                  {resume.projects.length > 0 && (
+                    <ResumeSection title="Projects">
+                      {resume.projects.map((project, index) => (
+                        <ResumeProject key={`${project.name}-${index}`} name={project.name} date={project.date}>
+                          {project.bullets.map((bullet, bulletIndex) => <li key={bulletIndex}>{bullet}</li>)}
+                        </ResumeProject>
+                      ))}
+                    </ResumeSection>
+                  )}
                 </div>
               </div>
             </div>
@@ -634,7 +660,6 @@ export default function Home() {
                   <strong>{profile.name}</strong><span>{profile.subtitle}</span>
                 </button>
               ))}
-              <button className="new-role">+ Add role category</button>
             </aside>
             <div className="profile-panel">
               <section className="hosted-saves">
@@ -693,7 +718,9 @@ export default function Home() {
                   </article>
                 ))}
               </div>
-              <button className="profile-action">Compare this role profile with my resume <span>→</span></button>
+              <button className="profile-action" onClick={() => { setRoleCategory(activeProfile.name); setTab("scan"); }}>
+                Compare this role profile with my resume <span>→</span>
+              </button>
             </div>
           </div>
         </section>

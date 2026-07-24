@@ -14,6 +14,8 @@ Requires Node.js 22.13 or newer.
 SUPABASE_URL=https://your-project-ref.supabase.co
 SUPABASE_PUBLISHABLE_KEY=sb_publishable_your-key
 SUPABASE_SECRET_KEY=your-server-only-secret-key
+OPENAI_API_KEY=optional-server-only-key
+OPENAI_MODEL=gpt-5.6-luna
 ```
 
 4. Configure Google-only authentication:
@@ -32,23 +34,26 @@ Open `http://localhost:3000/login` and continue with Google. The first successfu
 
 ## Edit the site
 
-- `app/page.tsx` contains the page content, sample data, and browser interactions.
+- `app/page.tsx` contains the authenticated workspace and browser interactions.
 - `app/globals.css` contains the visual system and responsive layout.
 - `app/api/job-descriptions/route.ts` is the server-only JD library API.
 - `lib/supabase/` owns cookie-session clients and route protection.
 - `db/supabase.ts` is the server-only administrative client; normal user requests do not use it.
 - `supabase/migrations/` contains the hosted database schema.
-- `types/resume.ts` is the shared contract for future parser, scorer, renderer, and JD library work.
+- `lib/resume/` contains validated parsing, scoring, semantic analysis, and DOCX export.
+- `types/resume.ts` is the shared résumé and scoring contract.
 
 ## What works now
 
-- PDF/DOCX file selection in the browser (file contents are not uploaded or parsed yet)
-- Job-description keyword detection with a sample JD
-- Separate format-health and role-match scores
+- Authenticated PDF/DOCX parsing with a 5 MB limit; originals are discarded after extraction
+- Job-description keyword extraction from the complete pasted description
+- Deterministic format-health and role-match scores based on the parsed résumé
 - Matched and missing keyword evidence
-- Grounded suggestion diffs with explicit accept/reject decisions
+- Optional OpenAI Structured Output suggestions with deterministic fallback
+- Grounded suggestion diffs that update the résumé only after explicit acceptance
 - Print-friendly Harvard-style résumé preview
-- Supabase-backed JD saves plus role-specific keyword-frequency views
+- In-page content editing plus PDF print/save and editable DOCX export
+- Supabase-backed JD saves plus dynamic role-specific keyword-frequency views
 - Google-only sign-in and automatic first-time account creation, plus sign-out
 - Per-user database ownership enforced by Row Level Security
 - Responsive desktop and mobile layouts
@@ -62,13 +67,12 @@ Open `http://localhost:3000/login` and continue with Google. The first successfu
 - Anonymous requests receive no table access.
 - JD reads and writes go through an authenticated Next.js server route using the current user session.
 
-## Production roadmap
+## Finish hosted setup
 
-1. Connect PDF and DOCX text extraction on a server route.
-2. Structure extracted résumé and JD text into the shared TypeScript schema.
-3. Keep format scoring deterministic and add semantic matching through a server-side model API.
-4. Add DOCX export and round-trip parser tests.
-5. Configure the production Google OAuth origin, Supabase callback, consent-screen branding, and deployment redirect URL before opening access publicly.
+1. Apply every migration in `supabase/migrations/`, including the résumé/version/scan migration.
+2. Optionally add `OPENAI_API_KEY` for semantic structuring and suggestions; deterministic analysis works without it.
+3. Configure the production Google OAuth origin, Supabase callback, consent-screen branding, and deployment redirect URL before opening access publicly.
+4. Add monitoring, rate limiting, backups, and a production domain during deployment.
 
 ## Portability
 

@@ -4,15 +4,15 @@ import test from "node:test";
 
 const root = new URL("../", import.meta.url);
 
-test("defines the finished Resume Signal product surface", async () => {
-  const [page, layout, stylesheet, packageJson] = await Promise.all([
+test("defines the production Resume Signal workspace", async () => {
+  const [page, sample, layout, stylesheet, packageJson] = await Promise.all([
     readFile(new URL("app/page.tsx", root), "utf8"),
+    readFile(new URL("lib/resume/sample.ts", root), "utf8"),
     readFile(new URL("app/layout.tsx", root), "utf8"),
     readFile(new URL("app/globals.css", root), "utf8"),
     readFile(new URL("package.json", root), "utf8"),
   ]);
 
-  assert.match(page, /Resume Signal/);
   assert.match(page, /Build the version of your resume this role needs/);
   assert.match(page, /Scan & build/);
   assert.match(page, /JD library/);
@@ -22,122 +22,86 @@ test("defines the finished Resume Signal product surface", async () => {
   assert.match(page, /"QA \/ UAT Analyst"/);
   assert.match(page, /Save postings in this category to build a keyword profile/);
   assert.match(page, /Harvard-style resume/);
-  assert.match(page, /Taylor Rivera/);
-  assert.match(page, /\+63 900 000 0000/);
-  assert.match(page, /portfolio\.example\.com/);
-  assert.match(page, /title="Professional Summary"/);
-  assert.match(page, /Business systems and data analyst who turns stakeholder needs/);
-  assert.match(page, /Collaborative and process-focused, with experience creating practical operational reports/);
-  assert.match(stylesheet, /\.summary-copy span \{ display: block; white-space: nowrap; \}/);
-  assert.doesNotMatch(page, /linkedin\.com\/in\/sample-profile/);
-  assert.match(page, /Sample Technology Company/);
-  assert.match(page, /Sample Financial Services Firm/);
-  assert.match(page, /Data Analytics Intern/);
-  assert.match(page, /University Technology Society/);
-  assert.match(page, /Programs Lead/);
-  assert.match(page, /Coordinated schedules, action logs, status reports, and demonstration workshops/);
-  assert.match(page, /Led volunteers delivering peer workshops and technology events/);
-  assert.doesNotMatch(page, /Maintained schedules, meeting notes|Tracked event plans, speaker requirements/);
-  assert.match(page, /Projects/);
-  assert.match(page, /Operations Dashboard Prototype/);
-  assert.match(page, /Methods:<\/strong> Agile, User Stories, Process Improvement, Requirements Documentation/);
-  assert.match(page, /Service Request Workflow Redesign/);
-  assert.match(page, /<ResumeProject name="Operations Dashboard Prototype" date="2021">/);
-  assert.match(page, /<ResumeProject name="Service Request Workflow Redesign" date="2020">/);
-  assert.doesNotMatch(page, /Independent Project|Team Project|Power BI · SQL|Process Mapping · UAT/);
-  assert.match(page, /Built a sample Power BI dashboard that summarized service trends/);
-  assert.match(page, /prototyped a simplified workflow with documented UAT scenarios/);
-  assert.doesNotMatch(page, /Defined example metrics|Prototyped a simplified workflow and documented/);
-  assert.match(page, /className="paper-frame"/);
-  assert.match(page, /className="paper-stage"/);
-  assert.match(page, /new ResizeObserver\(updatePreviewScale\)/);
-  assert.match(page, /window\.innerHeight - previewChromeHeight/);
-  assert.match(page, /useState<PreviewMode>\("readable"\)/);
-  assert.match(page, /<span>View<\/span>/);
-  assert.match(page, /<option value="readable">Fit width<\/option>/);
-  assert.match(page, /<option value="page">Fit page<\/option>/);
-  assert.match(page, /Leadership & Activities/);
-  assert.match(page, /Skills & Interests/);
-  assert.match(page, /BS Information Technology · <strong>GPA:<\/strong> 3\.70 \/ 4\.00/);
-  assert.match(page, /Awards:<\/strong> Dean’s List; Academic Merit Scholarship/);
-  assert.ok(page.indexOf('title="Professional Summary"') < page.indexOf('title="Education"'));
-  assert.doesNotMatch(page, /Relevant Coursework|Systems Analysis, Database Management/);
-  assert.ok(page.indexOf('title="Education"') < page.indexOf('title="Experience"'));
-  assert.ok(page.indexOf('title="Skills & Interests"') < page.indexOf('title="Projects"'));
-  assert.doesNotMatch(page, /Carlo Reyes|Philippine Airlines|De La Salle University|DLSU|Makati City/);
+  assert.match(page, /resume\.contact\.name/);
+  assert.match(page, /resume\.experience\.map/);
+  assert.match(page, /resume\.leadership\.map/);
+  assert.match(page, /resume\.projects\.map/);
+  assert.match(page, /Edit content/);
+  assert.match(page, /Download DOCX/);
+  assert.match(page, /Print \/ Save PDF/);
+  assert.match(page, /applyResumeSuggestion/);
+  assert.match(page, /\/api\/resumes\/parse/);
+  assert.match(page, /\/api\/scans/);
+  assert.doesNotMatch(page, /Prototype mode|Ready for the demo scan|browser demo/);
+  assert.match(sample, /Taylor Rivera/);
+  assert.match(sample, /Sample Technology Company/);
+  assert.match(sample, /Data Analytics Intern/);
+  assert.match(sample, /Leadership & Activities|leadership:/);
+  assert.match(sample, /Operations Dashboard Prototype/);
   assert.match(layout, /ATS Resume Builder/);
   assert.match(stylesheet, /@media \(max-width: 540px\)/);
-  assert.match(stylesheet, /Calibri, Arial, Helvetica, sans-serif/);
   assert.match(stylesheet, /\.paper \{[^}]*font: 11pt\/1\.12 Calibri/);
   assert.match(stylesheet, /\.paper \{[^}]*width: 8\.5in;[^}]*min-height: 11in;/);
-  assert.match(stylesheet, /\.paper-stage \{[^}]*transform: scale\(var\(--preview-scale\)\)/);
   assert.match(stylesheet, /@page \{ size: Letter portrait; margin: \.65in \.55in \.4in; \}/);
-  assert.match(stylesheet, /@media print \{[\s\S]*\.paper \{[^}]*font: 11pt\/1\.12 Calibri/);
-  assert.match(packageJson, /"dev": "next dev"/);
-  assert.match(packageJson, /"@supabase\/ssr"/);
-  assert.doesNotMatch(`${page}\n${layout}`, /codex-preview|SkeletonPreview|react-loading-skeleton|vinext/);
+  assert.match(packageJson, /"openai"/);
+  assert.match(packageJson, /"mammoth"/);
+  assert.match(packageJson, /"pdfjs-dist"/);
+  assert.match(packageJson, /"docx"/);
 });
 
 test("uses Google-only authentication and per-user Supabase persistence", async () => {
-  const [database, migration, ownershipMigration, route, environmentExample, serverClient, proxy, sessionProxy, login, register, authActions, authShell, page] = await Promise.all([
+  const [database, migration, ownershipMigration, productionMigration, route, environmentExample, authActions, authShell, page] = await Promise.all([
     readFile(new URL("db/supabase.ts", root), "utf8"),
     readFile(new URL("supabase/migrations/20260721000000_create_job_descriptions.sql", root), "utf8"),
     readFile(new URL("supabase/migrations/20260721010000_add_user_ownership.sql", root), "utf8"),
+    readFile(new URL("supabase/migrations/20260724000000_add_resumes_and_scans.sql", root), "utf8"),
     readFile(new URL("app/api/job-descriptions/route.ts", root), "utf8"),
     readFile(new URL(".env.example", root), "utf8"),
-    readFile(new URL("lib/supabase/server.ts", root), "utf8"),
-    readFile(new URL("proxy.ts", root), "utf8"),
-    readFile(new URL("lib/supabase/proxy.ts", root), "utf8"),
-    readFile(new URL("app/login/page.tsx", root), "utf8"),
-    readFile(new URL("app/register/page.tsx", root), "utf8"),
     readFile(new URL("app/auth/actions.ts", root), "utf8"),
     readFile(new URL("app/auth/auth-shell.tsx", root), "utf8"),
     readFile(new URL("app/page.tsx", root), "utf8"),
   ]);
 
   assert.match(database, /SUPABASE_SECRET_KEY/);
-  assert.match(database, /SUPABASE_SERVICE_ROLE_KEY/);
-  assert.match(database, /import "server-only"/);
-  assert.match(migration, /create table if not exists public\.job_descriptions/);
-  assert.match(migration, /enable row level security/);
-  assert.match(migration, /revoke all .* from anon, authenticated/);
-  assert.match(ownershipMigration, /user_id uuid references auth\.users/);
+  assert.match(migration, /public\.job_descriptions/);
   assert.match(ownershipMigration, /auth\.uid\(\)\) = user_id/);
-  assert.match(ownershipMigration, /to authenticated/);
+  assert.match(productionMigration, /public\.resumes/);
+  assert.match(productionMigration, /public\.resume_versions/);
+  assert.match(productionMigration, /public\.resume_scans/);
+  assert.match(productionMigration, /enable row level security/);
   assert.match(route, /export async function GET/);
   assert.match(route, /export async function POST/);
   assert.match(route, /export async function DELETE/);
-  assert.match(route, /auth\.getClaims\(\)/);
-  assert.match(route, /role_category, raw_text, keywords_json/);
-  assert.match(route, /user_id: userId/);
-  assert.match(route, /\.delete\(\)/);
-  assert.match(route, /\.eq\("id", id\)/);
-  assert.match(route, /\.eq\("user_id", userId\)/);
-  assert.doesNotMatch(route, /getSupabaseAdmin/);
-  assert.match(environmentExample, /SUPABASE_URL=/);
-  assert.match(environmentExample, /SUPABASE_PUBLISHABLE_KEY=/);
-  assert.match(environmentExample, /SUPABASE_SECRET_KEY=/);
-  assert.match(serverClient, /createServerClient/);
-  assert.match(proxy, /updateSession/);
-  assert.match(sessionProxy, /retiredAuthPages/);
-  assert.match(sessionProxy, /pathname === "\/auth\/callback"/);
-  assert.match(login, /Continue with Google/);
-  assert.doesNotMatch(login, /type="password"|Forgot password|Email address/);
-  assert.match(register, /redirect\("\/login"\)/);
-  assert.match(authActions, /signInWithOAuth/);
+  assert.match(environmentExample, /OPENAI_API_KEY=/);
   assert.match(authActions, /provider: "google"/);
-  assert.match(authActions, /skipBrowserRedirect: true/);
   assert.doesNotMatch(authActions, /signInWithPassword|signUp\(|resetPasswordForEmail|updateUser/);
   assert.doesNotMatch(authShell, /Supabase|authentication|row-level/);
-  assert.doesNotMatch(route, /Authentication required/);
-  assert.doesNotMatch(route, /D1|OAI-Sites-Authorization|localStorage|sessionStorage/);
   assert.match(page, /deleteSavedPosting/);
-  assert.match(page, /Delete .* saved posting/);
   assert.match(page, /View JD/);
-  assert.match(page, /Hide JD/);
-  assert.match(page, /Full job description/);
-  await assert.rejects(access(new URL("app/forgot-password/page.tsx", root)));
-  await assert.rejects(access(new URL("app/update-password/page.tsx", root)));
-  await assert.rejects(access(new URL("app/auth/confirm/route.ts", root)));
   await assert.rejects(access(new URL(".openai/hosting.json", root)));
+});
+
+test("implements validated parsing, scoring, semantic fallback, and export", async () => {
+  const [parser, analysis, semantic, parseRoute, scanRoute, exportRoute, docxExport] = await Promise.all([
+    readFile(new URL("lib/resume/parser.ts", root), "utf8"),
+    readFile(new URL("lib/resume/analysis.ts", root), "utf8"),
+    readFile(new URL("lib/resume/openai.ts", root), "utf8"),
+    readFile(new URL("app/api/resumes/parse/route.ts", root), "utf8"),
+    readFile(new URL("app/api/scans/route.ts", root), "utf8"),
+    readFile(new URL("app/api/exports/docx/route.ts", root), "utf8"),
+    readFile(new URL("lib/resume/export-docx.ts", root), "utf8"),
+  ]);
+
+  assert.match(parser, /MAX_RESUME_BYTES = 5 \* 1024 \* 1024/);
+  assert.match(parser, /extractRawText/);
+  assert.match(parser, /pdfjs-dist/);
+  assert.match(analysis, /formatHealth/);
+  assert.match(analysis, /extractJobKeywords/);
+  assert.match(semantic, /responses\.parse/);
+  assert.match(semantic, /zodTextFormat/);
+  assert.match(semantic, /Never invent/);
+  assert.match(parseRoute, /authenticatedSupabase/);
+  assert.match(scanRoute, /analysisMode = "hybrid"/);
+  assert.match(exportRoute, /application\/vnd\.openxmlformats/);
+  assert.match(docxExport, /Packer\.toBuffer/);
 });

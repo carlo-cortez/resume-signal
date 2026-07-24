@@ -1,33 +1,49 @@
+export interface ResumeContact {
+  name: string;
+  email: string;
+  phone: string;
+  location: string;
+  linkedin: string;
+  website: string;
+}
+
+export interface ResumeRole {
+  organization: string;
+  title: string;
+  location: string;
+  startDate: string;
+  endDate: string;
+  bullets: string[];
+}
+
+export interface ResumeEducation {
+  school: string;
+  degree: string;
+  location: string;
+  graduationDate: string;
+  gpa: string;
+  awards: string[];
+}
+
+export interface ResumeProject {
+  name: string;
+  date: string;
+  bullets: string[];
+}
+
+export interface ResumeSkillGroup {
+  label: string;
+  items: string[];
+}
+
 export interface Resume {
-  contact: {
-    name: string;
-    email: string;
-    phone?: string;
-    location?: string;
-    linkedin?: string;
-  };
-  summary?: string;
-  experience: {
-    title: string;
-    company: string;
-    location?: string;
-    startDate: string;
-    endDate: string | "Present";
-    bullets: string[];
-  }[];
-  education: {
-    school: string;
-    degree: string;
-    location?: string;
-    graduationDate: string;
-    honors?: string;
-  }[];
-  skills: string[];
-  projects?: {
-    name: string;
-    description: string;
-    bullets?: string[];
-  }[];
+  contact: ResumeContact;
+  summary: string;
+  education: ResumeEducation[];
+  experience: ResumeRole[];
+  leadership: ResumeRole[];
+  skills: ResumeSkillGroup[];
+  projects: ResumeProject[];
 }
 
 export interface JobDescription {
@@ -39,6 +55,15 @@ export interface JobDescription {
   rawText: string;
 }
 
+export interface ResumeSuggestion {
+  keyword: string;
+  targetPath: string;
+  original: string;
+  revised: string;
+  reason: string;
+  flag: "verify claim" | "high JD overlap" | null;
+}
+
 export interface ScoreResult {
   formattingScore: number;
   formattingIssues: {
@@ -48,14 +73,8 @@ export interface ScoreResult {
   matchScore: number;
   matchedKeywords: string[];
   missingKeywords: string[];
-  suggestions: {
-    section: string;
-    original?: string;
-    suggestion: string;
-    reason: string;
-    similarityToJd: number;
-    flag?: "high_jd_overlap" | "keyword_stuffing" | "unverified_claim";
-  }[];
+  suggestions: ResumeSuggestion[];
+  analysisMode: "deterministic" | "hybrid";
 }
 
 export interface StoredJD extends JobDescription {
