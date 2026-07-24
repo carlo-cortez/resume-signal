@@ -82,7 +82,7 @@ test("uses Google-only authentication and per-user Supabase persistence", async 
 });
 
 test("implements validated parsing, scoring, semantic fallback, and export", async () => {
-  const [parser, analysis, semantic, parseRoute, scanRoute, exportRoute, docxExport] = await Promise.all([
+  const [parser, analysis, semantic, parseRoute, scanRoute, exportRoute, docxExport, nextConfig] = await Promise.all([
     readFile(new URL("lib/resume/parser.ts", root), "utf8"),
     readFile(new URL("lib/resume/analysis.ts", root), "utf8"),
     readFile(new URL("lib/resume/openai.ts", root), "utf8"),
@@ -90,6 +90,7 @@ test("implements validated parsing, scoring, semantic fallback, and export", asy
     readFile(new URL("app/api/scans/route.ts", root), "utf8"),
     readFile(new URL("app/api/exports/docx/route.ts", root), "utf8"),
     readFile(new URL("lib/resume/export-docx.ts", root), "utf8"),
+    readFile(new URL("next.config.ts", root), "utf8"),
   ]);
 
   assert.match(parser, /MAX_RESUME_BYTES = 5 \* 1024 \* 1024/);
@@ -104,4 +105,5 @@ test("implements validated parsing, scoring, semantic fallback, and export", asy
   assert.match(scanRoute, /analysisMode = "hybrid"/);
   assert.match(exportRoute, /application\/vnd\.openxmlformats/);
   assert.match(docxExport, /Packer\.toBuffer/);
+  assert.match(nextConfig, /serverExternalPackages: \["pdfjs-dist"\]/);
 });
