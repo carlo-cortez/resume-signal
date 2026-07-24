@@ -5,7 +5,6 @@ import {
   Packer,
   Paragraph,
   Tab,
-  TabStopPosition,
   TabStopType,
   TextRun,
   convertInchesToTwip,
@@ -24,11 +23,14 @@ function heading(text: string) {
 
 function line(left: string, right: string, bold = false) {
   return new Paragraph({
-    tabStops: [{ type: TabStopType.RIGHT, position: TabStopPosition.MAX }],
+    tabStops: [{
+      type: TabStopType.RIGHT,
+      position: convertInchesToTwip(7.35),
+    }],
     spacing: paragraphSpacing,
     children: [
       new TextRun({ text: left, bold, size: 22, font: "Calibri" }),
-      new Tab(),
+      new TextRun({ children: [new Tab()] }),
       new TextRun({ text: right, size: 22, font: "Calibri" }),
     ],
   });
