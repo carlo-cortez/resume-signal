@@ -127,9 +127,9 @@ main { width: min(1440px, 100%); margin: 0 auto; min-height: 100vh; }
 .upload-zone > span:last-child { display: grid; gap: 4px; min-width: 0; }
 .upload-zone strong { overflow: hidden; text-overflow: ellipsis; font-size: 13px; white-space: nowrap; }
 .upload-zone small { color: var(--muted); font-size: 10px; }
-.parse-status { margin: -10px 2px 16px; font-size: 10px; line-height: 1.45; }
+.parse-status { margin: -10px 2px 16px; padding: 9px 10px; border-radius: 8px; background: rgba(255,255,255,.72); font-size: 11px; line-height: 1.45; }
 .parse-status.ready { color: var(--forest); }
-.parse-status.error { color: #8e4325; }
+.parse-status.error { color: #8e4325; background: var(--orange-soft); }
 .field-label-row { display: flex; justify-content: space-between; align-items: center; margin: 0 2px 8px; }
 .field-label-row label { color: var(--ink-soft); font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .1em; }
 .text-button { padding: 0; border: 0; background: transparent; color: var(--forest); font-size: 11px; font-weight: 700; }
@@ -185,6 +185,12 @@ textarea:focus { border-color: var(--forest); outline: 3px solid rgba(23,79,63,.
 .preview-header .eyebrow { margin-bottom: 5px; }
 .preview-header h2 { margin: 0; font: 500 24px/1.2 Georgia, serif; }
 .preview-actions { display: flex; align-items: center; gap: 10px; }
+.preview-notice { display: flex; align-items: baseline; gap: 9px; margin: -2px 0 14px; padding: 10px 12px; border: 1px solid #b9c5bd; border-radius: 9px; color: var(--forest); background: rgba(255,255,255,.72); font-size: 11px; line-height: 1.4; }
+.preview-notice strong { flex: 0 0 auto; font-size: 11px; }
+.preview-notice span { min-width: 0; overflow: hidden; color: var(--muted); text-overflow: ellipsis; white-space: nowrap; }
+.preview-notice.loading { color: var(--ink-soft); }
+.preview-notice.error { border-color: #d6a38e; color: #8e4325; background: var(--orange-soft); }
+.preview-notice.error span { white-space: normal; }
 .preview-view-control { display: flex; align-items: center; gap: 7px; color: var(--muted); font-size: 10px; font-weight: 700; }
 .preview-view-control select { min-width: 102px; border: 1px solid #aeb8b1; border-radius: 999px; padding: 8px 28px 8px 11px; color: var(--ink); background-color: rgba(255,255,255,.65); font: inherit; }
 .preview-view-control select:focus { border-color: var(--forest); outline: 3px solid rgba(23,79,63,.12); }

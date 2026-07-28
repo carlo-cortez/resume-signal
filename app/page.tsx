@@ -49,6 +49,17 @@ function titleCase(value: string) {
   return value.replace(/\b\w/g, (character) => character.toUpperCase());
 }
 
+function hasResumeBody(resume: Resume) {
+  return Boolean(
+    resume.summary.trim() ||
+    resume.education.length ||
+    resume.experience.length ||
+    resume.leadership.length ||
+    resume.skills.length ||
+    resume.projects.length
+  );
+}
+
 export default function Home() {
   const [tab, setTab] = useState<Tab>("scan");
   const [jobDescription, setJobDescription] = useState("");
@@ -153,6 +164,7 @@ export default function Home() {
 
   async function handleFile(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
+    event.target.value = "";
     setResumeFile(file?.name ?? "");
     setHasScanned(false);
     setAnalysis(null);
@@ -166,7 +178,7 @@ export default function Home() {
     form.set("resume", file);
     try {
       const response = await fetch("/api/resumes/parse", { method: "POST", body: form });
-      const data = await response.json() as {
+      const data = await response.json().catch(() => ({})) as {
         error?: string;
         resume?: Resume;
         extractedText?: string;
@@ -176,12 +188,17 @@ export default function Home() {
         persistence?: "saved" | "migration_required";
       };
       if (!response.ok || !data.resume || !data.extractedText) throw new Error(data.error || "Unable to parse this resume.");
+      if (!hasResumeBody(data.resume)) {
+        throw new Error("Text was extracted, but we could not identify enough resume sections to build the preview. Try a DOCX version or a text-based PDF.");
+      }
       setResume(data.resume);
       setResumeId(data.resumeId ?? null);
       setResumeVersionId(data.versionId ?? null);
+      setPreviewMode("readable");
+      setShowEditor(false);
       setParseStatus("ready");
       setParseMessage(
-        `${data.analysisMode === "semantic" ? "Structured analysis" : "Local extraction"} complete` +
+        `${data.analysisMode === "semantic" ? "Structured analysis" : "Local extraction"} complete. Preview updated` +
         (data.persistence === "saved" ? " and saved." : ". Database migration is still required for version history."),
       );
     } catch (error) {
@@ -518,6 +535,24 @@ export default function Home() {
                 </button>
               </div>
             </div>
+            {parseStatus === "parsing" && (
+              <div className="preview-notice loading" role="status">
+                <strong>Reading your resume…</strong>
+                <span>The sample remains visible until the new preview is ready.</span>
+              </div>
+            )}
+            {parseStatus === "error" && (
+              <div className="preview-notice error" role="alert">
+                <strong>Preview not updated</strong>
+                <span>{parseMessage || "We couldn’t read that file. Please try again."}</span>
+              </div>
+            )}
+            {parseStatus === "ready" && (
+              <div className="preview-notice ready" role="status">
+                <strong>Preview updated</strong>
+                <span>{resumeFile}</span>
+              </div>
+            )}
             {showEditor && (
               <section className="resume-editor" aria-label="Resume content editor">
                 <div className="editor-grid">
