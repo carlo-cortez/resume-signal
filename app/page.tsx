@@ -3,9 +3,9 @@
 import { CSSProperties, ChangeEvent, useEffect, useMemo, useRef, useState } from "react";
 import { sampleResume } from "@/lib/resume/sample";
 import { applyResumeSuggestion } from "@/lib/resume/text";
-import type { Resume, ResumeSuggestion, ScoreResult } from "@/types/resume";
+import type { ParseQuality, Resume, ResumeSuggestion, ScoreResult } from "@/types/resume";
 
-type Tab = "scan" | "library";
+type Tab = "scan" | "library" | "history";
 type Resolution = "accepted" | "rejected";
 type PreviewMode = "readable" | "page";
 
@@ -19,6 +19,40 @@ type SavedPosting = {
   match_score: number | null;
   outcome: string;
   created_at: string;
+};
+
+type SavedResume = {
+  id: string;
+  name: string;
+  created_at: string;
+  updated_at: string;
+};
+
+type ResumeVersion = {
+  id: string;
+  resume_id: string;
+  version_number: number;
+  data_json: Resume;
+  created_at: string;
+};
+
+type StoredScan = {
+  id: string;
+  resume_version_id: string | null;
+  company: string | null;
+  role_category: string;
+  job_description: string;
+  formatting_score: number;
+  match_score: number;
+  matched_keywords: string[];
+  missing_keywords: string[];
+  suggestions_json: ResumeSuggestion[];
+  analysis_mode: "deterministic" | "hybrid";
+  created_at: string;
+};
+
+type ApiErrorPayload = {
+  error?: string | { code?: string; message?: string };
 };
 
 type RoleProfile = {
@@ -49,6 +83,11 @@ function titleCase(value: string) {
   return value.replace(/\b\w/g, (character) => character.toUpperCase());
 }
 
+function apiMessage(payload: ApiErrorPayload, fallback: string) {
+  if (typeof payload.error === "string") return payload.error;
+  return payload.error?.message || fallback;
+}
+
 function hasResumeBody(resume: Resume) {
   return Boolean(
     resume.summary.trim() ||
@@ -70,6 +109,7 @@ export default function Home() {
   const [versionStatus, setVersionStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [parseStatus, setParseStatus] = useState<"idle" | "parsing" | "ready" | "error">("idle");
   const [parseMessage, setParseMessage] = useState("");
+  const [parseQuality, setParseQuality] = useState<ParseQuality | null>(null);
   const [analysis, setAnalysis] = useState<ScoreResult | null>(null);
   const [scanError, setScanError] = useState("");
   const [company, setCompany] = useState("");
@@ -85,6 +125,14 @@ export default function Home() {
   const [expandedPostingId, setExpandedPostingId] = useState<string | null>(null);
   const [deletingPostingId, setDeletingPostingId] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState("");
+  const [savedResumes, setSavedResumes] = useState<SavedResume[]>([]);
+  const [resumeVersions, setResumeVersions] = useState<ResumeVersion[]>([]);
+  const [scanHistory, setScanHistory] = useState<StoredScan[]>([]);
+  const [scanNextCursor, setScanNextCursor] = useState<string | null>(null);
+  const [selectedHistoryResumeId, setSelectedHistoryResumeId] = useState("");
+  const [historyStatus, setHistoryStatus] = useState<"idle" | "loading" | "ready" | "error">("idle");
+  const [historyError, setHistoryError] = useState("");
+  const [deletingScanId, setDeletingScanId] = useState<string | null>(null);
   const [previewScale, setPreviewScale] = useState(1);
   const [previewMode, setPreviewMode] = useState<PreviewMode>("readable");
   const [showEditor, setShowEditor] = useState(false);
@@ -142,6 +190,48 @@ export default function Home() {
   }, [tab]);
 
   useEffect(() => {
+    if (tab !== "history") return;
+    let cancelled = false;
+
+    Promise.all([
+      fetch("/api/resumes").then(async (response) => {
+        const data = await response.json() as { items?: SavedResume[] } & ApiErrorPayload;
+        if (!response.ok) throw new Error(apiMessage(data, "Unable to load saved resumes."));
+        return data.items ?? [];
+      }),
+      fetch("/api/scans?limit=20").then(async (response) => {
+        const data = await response.json() as { items?: StoredScan[]; nextCursor?: string | null } & ApiErrorPayload;
+        if (!response.ok) throw new Error(apiMessage(data, "Unable to load scan history."));
+        return { items: data.items ?? [], nextCursor: data.nextCursor ?? null };
+      }),
+    ]).then(async ([resumes, scans]) => {
+      if (cancelled) return;
+      setSavedResumes(resumes);
+      setScanHistory(scans.items);
+      setScanNextCursor(scans.nextCursor);
+      const selected = resumes.some((item) => item.id === resumeId) ? resumeId ?? "" : resumes[0]?.id ?? "";
+      setSelectedHistoryResumeId(selected);
+      if (selected) {
+        const response = await fetch(`/api/resumes/versions?resumeId=${encodeURIComponent(selected)}`);
+        const data = await response.json() as { items?: ResumeVersion[] } & ApiErrorPayload;
+        if (!response.ok) throw new Error(apiMessage(data, "Unable to load resume versions."));
+        if (!cancelled) setResumeVersions(data.items ?? []);
+      } else {
+        setResumeVersions([]);
+      }
+      if (!cancelled) setHistoryStatus("ready");
+    }).catch((error) => {
+      if (cancelled) return;
+      setHistoryStatus("error");
+      setHistoryError(error instanceof Error ? error.message : "Unable to load history.");
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [tab, resumeId]);
+
+  useEffect(() => {
     const frame = previewFrameRef.current;
     if (!frame) return;
 
@@ -169,6 +259,7 @@ export default function Home() {
     setHasScanned(false);
     setAnalysis(null);
     setParseMessage("");
+    setParseQuality(null);
     if (!file) {
       setParseStatus("idle");
       return;
@@ -178,28 +269,29 @@ export default function Home() {
     form.set("resume", file);
     try {
       const response = await fetch("/api/resumes/parse", { method: "POST", body: form });
-      const data = await response.json().catch(() => ({})) as {
-        error?: string;
+      const data = await response.json().catch(() => ({})) as ApiErrorPayload & {
         resume?: Resume;
-        extractedText?: string;
+        quality?: ParseQuality;
         versionId?: string | null;
         resumeId?: string | null;
         analysisMode?: "local" | "semantic";
         persistence?: "saved" | "migration_required";
       };
-      if (!response.ok || !data.resume || !data.extractedText) throw new Error(data.error || "Unable to parse this resume.");
+      if (!response.ok || !data.resume || !data.quality) throw new Error(apiMessage(data, "Unable to parse this resume."));
       if (!hasResumeBody(data.resume)) {
         throw new Error("Text was extracted, but we could not identify enough resume sections to build the preview. Try a DOCX version or a text-based PDF.");
       }
       setResume(data.resume);
       setResumeId(data.resumeId ?? null);
       setResumeVersionId(data.versionId ?? null);
+      setParseQuality(data.quality);
       setPreviewMode("readable");
       setShowEditor(false);
       setParseStatus("ready");
       setParseMessage(
         `${data.analysisMode === "semantic" ? "Structured analysis" : "Local extraction"} complete. Preview updated` +
-        (data.persistence === "saved" ? " and saved." : ". Database migration is still required for version history."),
+        (data.persistence === "saved" ? " and saved." : ". Version history could not be saved yet.") +
+        (data.quality.status === "partial" ? " Review the detected sections before scanning." : ""),
       );
     } catch (error) {
       setParseStatus("error");
@@ -224,8 +316,8 @@ export default function Home() {
           roleCategory,
         }),
       });
-      const data = await response.json() as ScoreResult & { error?: string };
-      if (!response.ok) throw new Error(data.error || "Scan failed.");
+      const data = await response.json() as ScoreResult & ApiErrorPayload;
+      if (!response.ok) throw new Error(apiMessage(data, "Scan failed."));
       setAnalysis(data);
       setHasScanned(true);
     } catch (error) {
@@ -251,8 +343,8 @@ export default function Home() {
           matchScore,
         }),
       });
-      if (!response.ok) throw new Error("Save failed");
-      const saved = await response.json() as SavedPosting;
+      const saved = await response.json() as SavedPosting & ApiErrorPayload;
+      if (!response.ok) throw new Error(apiMessage(saved, "Save failed"));
       setHostedPostings((current) => [saved, ...current]);
       setSaveStatus("saved");
     } catch {
@@ -271,7 +363,10 @@ export default function Home() {
       const response = await fetch(`/api/job-descriptions?id=${encodeURIComponent(posting.id)}`, {
         method: "DELETE",
       });
-      if (!response.ok) throw new Error("Delete failed");
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({})) as ApiErrorPayload;
+        throw new Error(apiMessage(data, "Delete failed"));
+      }
       setHostedPostings((current) => current.filter((item) => item.id !== posting.id));
       setExpandedPostingId((current) => current === posting.id ? null : current);
     } catch {
@@ -281,7 +376,79 @@ export default function Home() {
     }
   }
 
+  async function selectHistoryResume(id: string) {
+    setSelectedHistoryResumeId(id);
+    setHistoryError("");
+    const response = await fetch(`/api/resumes/versions?resumeId=${encodeURIComponent(id)}`);
+    const data = await response.json() as { items?: ResumeVersion[] } & ApiErrorPayload;
+    if (!response.ok) {
+      setHistoryError(apiMessage(data, "Unable to load resume versions."));
+      return;
+    }
+    setResumeVersions(data.items ?? []);
+  }
+
+  function restoreResumeVersion(version: ResumeVersion) {
+    setResume(version.data_json);
+    setResumeId(version.resume_id);
+    setResumeVersionId(version.id);
+    setResumeFile(`Saved version ${version.version_number}`);
+    setParseQuality(null);
+    setParseStatus("ready");
+    setParseMessage(`Version ${version.version_number} restored for review. Saving creates a new version.`);
+    setAnalysis(null);
+    setHasScanned(false);
+    setShowEditor(false);
+    setPreviewMode("readable");
+    setTab("scan");
+  }
+
+  function reopenScan(scan: StoredScan) {
+    setCompany(scan.company ?? "");
+    setRoleCategory(scan.role_category);
+    setJobDescription(scan.job_description);
+    setAnalysis({
+      formattingScore: scan.formatting_score,
+      formattingIssues: [],
+      matchScore: scan.match_score,
+      matchedKeywords: scan.matched_keywords,
+      missingKeywords: scan.missing_keywords,
+      suggestions: scan.suggestions_json,
+      analysisMode: scan.analysis_mode,
+    });
+    setHasScanned(true);
+    setResolutions({});
+    setTab("scan");
+  }
+
+  async function deleteStoredScan(scan: StoredScan) {
+    if (!window.confirm("Delete this saved scan? This cannot be undone.")) return;
+    setDeletingScanId(scan.id);
+    setHistoryError("");
+    const response = await fetch(`/api/scans?id=${encodeURIComponent(scan.id)}`, { method: "DELETE" });
+    if (response.ok) {
+      setScanHistory((current) => current.filter((item) => item.id !== scan.id));
+    } else {
+      const data = await response.json().catch(() => ({})) as ApiErrorPayload;
+      setHistoryError(apiMessage(data, "Unable to delete this scan."));
+    }
+    setDeletingScanId(null);
+  }
+
+  async function loadMoreScans() {
+    if (!scanNextCursor) return;
+    const response = await fetch(`/api/scans?limit=20&cursor=${encodeURIComponent(scanNextCursor)}`);
+    const data = await response.json() as { items?: StoredScan[]; nextCursor?: string | null } & ApiErrorPayload;
+    if (!response.ok) {
+      setHistoryError(apiMessage(data, "Unable to load more scans."));
+      return;
+    }
+    setScanHistory((current) => [...current, ...(data.items ?? [])]);
+    setScanNextCursor(data.nextCursor ?? null);
+  }
+
   function acceptSuggestion(suggestion: ResumeSuggestion) {
+    if (suggestion.kind !== "grounded_edit" || suggestion.source !== "openai") return;
     setResume((current) => applyResumeSuggestion(current, suggestion.targetPath, suggestion.revised));
     setResolutions((current) => ({ ...current, [suggestion.keyword]: "accepted" }));
   }
@@ -371,6 +538,16 @@ export default function Home() {
         <button className={tab === "library" ? "active" : ""} onClick={() => { setLibraryStatus("loading"); setTab("library"); }}>
           JD library <span>{hostedPostings.length}</span>
         </button>
+        <button
+          className={tab === "history" ? "active" : ""}
+          onClick={() => {
+            setHistoryStatus("loading");
+            setHistoryError("");
+            setTab("history");
+          }}
+        >
+          History <span>{scanHistory.length || ""}</span>
+        </button>
         <button disabled title="Planned for a later phase">
           Interview prep <span>soon</span>
         </button>
@@ -397,6 +574,12 @@ export default function Home() {
                 </span>
               </label>
               {parseMessage && <p className={`parse-status ${parseStatus}`} role="status">{parseMessage}</p>}
+              {parseQuality?.warnings.length ? (
+                <details className="parse-warnings">
+                  <summary>{parseQuality.warnings.length} import warning{parseQuality.warnings.length === 1 ? "" : "s"}</summary>
+                  <ul>{parseQuality.warnings.map((warning) => <li key={warning}>{warning}</li>)}</ul>
+                </details>
+              ) : null}
 
               <div className="field-label-row">
                 <label htmlFor="job-description">Job description</label>
@@ -480,17 +663,34 @@ export default function Home() {
                       <article className={`suggestion-card ${resolution ? "resolved" : ""}`} key={suggestion.keyword}>
                         <div className="suggestion-topline">
                           <strong>{suggestion.keyword}</strong>
-                          {suggestion.flag && <span className="flag">{suggestion.flag}</span>}
+                          <div className="suggestion-badges">
+                            <span className={`source-badge ${suggestion.source}`}>
+                              {suggestion.source === "openai" ? "AI-assisted" : "Keyword comparison"}
+                            </span>
+                            {suggestion.flag && <span className="flag">{suggestion.flag}</span>}
+                          </div>
                         </div>
-                        <p className="original">− {suggestion.original}</p>
-                        <p className="revision">+ {suggestion.revised}</p>
+                        <div className="suggestion-evidence">
+                          <strong>Job-description evidence</strong>
+                          <p>“{suggestion.jobEvidence}”</p>
+                        </div>
+                        <p className="suggestion-target"><strong>Review in:</strong> {suggestion.targetLabel}</p>
+                        {suggestion.original && <p className="original">Current: {suggestion.original}</p>}
+                        {suggestion.kind === "grounded_edit" && suggestion.revised && (
+                          <p className="revision">Suggested: {suggestion.revised}</p>
+                        )}
                         <p className="reason">{suggestion.reason}</p>
                         {resolution ? (
                           <p className="resolution">Marked {resolution}. You can revisit this decision anytime.</p>
-                        ) : (
+                        ) : suggestion.kind === "grounded_edit" && suggestion.source === "openai" ? (
                           <div className="suggestion-actions">
                             <button onClick={() => acceptSuggestion(suggestion)} disabled={!suggestion.targetPath}>Accept</button>
                             <button onClick={() => setResolutions((current) => ({ ...current, [suggestion.keyword]: "rejected" }))}>Reject</button>
+                          </div>
+                        ) : (
+                          <div className="evidence-prompt-action">
+                            <p>Verify this experience yourself, then use Edit content to add accurate wording.</p>
+                            <button onClick={() => setResolutions((current) => ({ ...current, [suggestion.keyword]: "rejected" }))}>Dismiss</button>
                           </div>
                         )}
                       </article>
@@ -681,7 +881,7 @@ export default function Home() {
             </div>
           </section>
         </section>
-      ) : (
+      ) : tab === "library" ? (
         <section className="library-view">
           <div className="library-intro">
             <p className="eyebrow">Pattern finder</p>
@@ -758,6 +958,77 @@ export default function Home() {
               </button>
             </div>
           </div>
+        </section>
+      ) : (
+        <section className="history-view">
+          <div className="history-intro">
+            <p className="eyebrow">Saved work</p>
+            <h2>Revisit a resume version or reopen a previous scan.</h2>
+            <p>History is read-only until you deliberately save a new version. Restoring never overwrites the original record.</p>
+          </div>
+          {historyStatus === "loading" && <div className="history-state">Loading your history…</div>}
+          {historyStatus === "error" && <div className="history-state error" role="alert">{historyError}</div>}
+          {historyStatus === "ready" && (
+            <div className="history-grid">
+              <section className="history-panel">
+                <div className="history-panel-heading">
+                  <div><span>Resume versions</span><strong>{resumeVersions.length}</strong></div>
+                  <select
+                    aria-label="Saved resume"
+                    value={selectedHistoryResumeId}
+                    onChange={(event) => selectHistoryResume(event.target.value)}
+                    disabled={!savedResumes.length}
+                  >
+                    {savedResumes.length
+                      ? savedResumes.map((item) => <option value={item.id} key={item.id}>{item.name}</option>)
+                      : <option value="">No saved resumes</option>}
+                  </select>
+                </div>
+                {!resumeVersions.length && <p className="history-empty">Upload a resume to create its first saved version.</p>}
+                <div className="history-list">
+                  {resumeVersions.map((version) => (
+                    <article key={version.id}>
+                      <div>
+                        <strong>Version {version.version_number}</strong>
+                        <span>{new Date(version.created_at).toLocaleString()}</span>
+                      </div>
+                      <button type="button" onClick={() => restoreResumeVersion(version)}>Restore for review</button>
+                    </article>
+                  ))}
+                </div>
+              </section>
+              <section className="history-panel">
+                <div className="history-panel-heading">
+                  <div><span>ATS scans</span><strong>{scanHistory.length}</strong></div>
+                </div>
+                {!scanHistory.length && <p className="history-empty">Run an ATS scan to build your history.</p>}
+                <div className="history-list scans">
+                  {scanHistory.map((scan) => (
+                    <article key={scan.id}>
+                      <div>
+                        <strong>{scan.company || scan.role_category}</strong>
+                        <span>{scan.role_category} · {scan.match_score}% match · {new Date(scan.created_at).toLocaleString()}</span>
+                        <small>{scan.analysis_mode === "hybrid" ? "AI-assisted evidence" : "Keyword comparison"}</small>
+                      </div>
+                      <div className="history-actions">
+                        <button type="button" onClick={() => reopenScan(scan)}>Reopen</button>
+                        <button
+                          className="danger"
+                          type="button"
+                          disabled={deletingScanId === scan.id}
+                          onClick={() => deleteStoredScan(scan)}
+                        >
+                          {deletingScanId === scan.id ? "Deleting…" : "Delete"}
+                        </button>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+                {scanNextCursor && <button className="history-load-more" type="button" onClick={loadMoreScans}>Load more scans</button>}
+                {historyError && <p className="history-inline-error" role="alert">{historyError}</p>}
+              </section>
+            </div>
+          )}
         </section>
       )}
 

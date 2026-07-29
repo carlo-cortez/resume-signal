@@ -7,7 +7,7 @@ Resume Signal is a portable ATS résumé workspace based on the supplied build p
 Requires Node.js 22.13 or newer.
 
 1. Create or choose a Supabase project.
-2. Run the files in `supabase/migrations/` in filename order in the Supabase SQL editor. If the repository is linked with the Supabase CLI, `supabase db push` applies the same migrations.
+2. Run the files in `supabase/migrations/` in filename order in the Supabase SQL editor. For a new, empty project, a linked Supabase CLI can apply the full set with `supabase db push`. For an existing project, use the staged privacy procedure below instead of pushing both 20260728 migrations together.
 3. Copy `.env.example` to `.env.local` and set the project URL, publishable key, and server-side secret key:
 
 ```bash
@@ -45,15 +45,17 @@ Open `http://localhost:3000/login` and continue with Google. The first successfu
 
 ## What works now
 
-- Authenticated PDF/DOCX parsing with a 5 MB limit; originals are discarded after extraction
+- Authenticated PDF/DOCX parsing with a 5 MB limit, section-quality warnings, and no retained original or raw extracted text
 - Job-description keyword extraction from the complete pasted description
 - Deterministic format-health and role-match scores based on the parsed résumé
 - Matched and missing keyword evidence
 - Optional OpenAI Structured Output suggestions with deterministic fallback
-- Grounded suggestion diffs that update the résumé only after explicit acceptance
+- Evidence-first suggestion cards that cite the JD phrase and target resume section
+- Grounded AI-assisted diffs that update the résumé only after explicit acceptance; local evidence prompts never auto-apply
 - Print-friendly Harvard-style résumé preview
 - In-page content editing plus PDF print/save and editable DOCX export
 - Supabase-backed JD saves plus dynamic role-specific keyword-frequency views
+- Restorable resume-version history and reopenable/deletable scan history
 - Google-only sign-in and automatic first-time account creation, plus sign-out
 - Per-user database ownership enforced by Row Level Security
 - Responsive desktop and mobile layouts
@@ -64,15 +66,18 @@ Open `http://localhost:3000/login` and continue with Google. The first successfu
 - Auth sessions use secure cookies through `@supabase/ssr`.
 - Google is the only configured identity provider; the application does not collect or store passwords.
 - Row Level Security is enabled on `job_descriptions`; authenticated users can access only rows whose `user_id` matches `auth.uid()`.
+- Structured resume versions are stored, but uploaded files and extracted raw text are discarded after parsing.
 - Anonymous requests receive no table access.
 - JD reads and writes go through an authenticated Next.js server route using the current user session.
 
 ## Finish hosted setup
 
-1. Apply every migration in `supabase/migrations/`, including the résumé/version/scan migration.
-2. Optionally add `OPENAI_API_KEY` for semantic structuring and suggestions; deterministic analysis works without it.
-3. Configure the production Google OAuth origin, Supabase callback, consent-screen branding, and deployment redirect URL before opening access publicly.
-4. Add monitoring, rate limiting, backups, and a production domain during deployment.
+1. Apply the résumé/version/scan migration and `20260728000000_clear_resume_source_text.sql`. This makes the legacy raw-text field nullable and erases retained values.
+2. Run the upgraded application and verify that parsing, version saving, and history still work. New code stores only structured resume data.
+3. After that verification, apply `20260728010000_drop_resume_source_text.sql` to remove the deprecated field. Existing projects should not combine these two privacy phases into one unattended push.
+4. Optionally add `OPENAI_API_KEY` for semantic structuring and suggestions; deterministic analysis works without it.
+5. Configure the production Google OAuth origin, Supabase callback, consent-screen branding, and deployment redirect URL before opening access publicly.
+6. Add monitoring, rate limiting, backups, and a production domain during deployment.
 
 ## Portability
 

@@ -1,14 +1,28 @@
 import mammoth from "mammoth";
-import type { Resume, ResumeRole } from "@/types/resume";
+import type { ParseQuality, Resume, ResumeProject, ResumeRole } from "@/types/resume";
 
 export const MAX_RESUME_BYTES = 5 * 1024 * 1024;
-const sectionNames = /^(?:(?:professional )?summary|education|experience|work experience|employment|leadership(?: & activities)?|activities|skills(?: & interests)?|projects?)$/i;
+const sectionAliases: Array<{ canonical: string; pattern: RegExp }> = [
+  { canonical: "summary", pattern: /^(?:(?:professional|career|executive) )?(?:summary|profile|objective)$/i },
+  { canonical: "education", pattern: /^(?:education|academic background|academic history|qualifications)$/i },
+  { canonical: "experience", pattern: /^(?:(?:professional|relevant|work) )?(?:experience|employment|employment history|work history)$/i },
+  { canonical: "leadership", pattern: /^(?:leadership(?: & activities)?|activities|volunteer(?:ing| experience)?|community involvement|extracurricular activities)$/i },
+  { canonical: "skills", pattern: /^(?:skills(?: & interests)?|technical skills|core competencies|competencies|tools & technologies|technologies)$/i },
+  { canonical: "projects", pattern: /^(?:projects?|selected projects?|academic projects?|personal projects?)$/i },
+];
+const dateToken = String.raw`(?:present|current|now|(?:jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:t(?:ember)?)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\.?\s+)?(?:19|20)\d{2}`;
+const dateRangePattern = new RegExp(`(${dateToken})\\s*(?:-|–|—|to)\\s*(${dateToken})`, "i");
 
 function cleanLines(text: string) {
   return text
     .replace(/\r/g, "\n")
     .split("\n")
-    .map((line) => line.replace(/\s+/g, " ").replace(/^[•●▪◦*-]\s*/, "").trim())
+    .map((line) => {
+      const trimmed = line.replace(/\s+/g, " ").trim();
+      return /^[•●▪◦*-]\s*/.test(trimmed)
+        ? `• ${trimmed.replace(/^[•●▪◦*-]\s*/, "")}`
+        : trimmed;
+    })
     .filter(Boolean);
 }
 
@@ -48,9 +62,10 @@ function sectionMap(lines: string[]) {
   const sections: Record<string, string[]> = { header: [] };
   let active = "header";
   for (const line of lines) {
-    const headingCandidate = line.replace(/\s*\[.*\]\s*$/, "").replace(/:$/, "").trim();
-    if (sectionNames.test(headingCandidate)) {
-      active = headingCandidate.toLowerCase().replace(/[^a-z]+/g, " ").trim();
+    const headingCandidate = line.replace(/^•\s*/, "").replace(/\s*\[.*\]\s*$/, "").replace(/:$/, "").trim();
+    const match = sectionAliases.find(({ pattern }) => pattern.test(headingCandidate));
+    if (match) {
+      active = match.canonical;
       sections[active] = [];
     } else {
       sections[active] ??= [];
@@ -67,19 +82,57 @@ function section(sections: Record<string, string[]>, names: string[]) {
 
 function rolesFromLines(lines: string[]): ResumeRole[] {
   if (!lines.length) return [];
-  const bullets = lines.filter((line) => line.length > 35);
-  const headings = lines.filter((line) => line.length <= 35);
-  return [{
-    organization: headings[0] ?? "",
-    title: headings[1] ?? "",
-    location: "",
-    startDate: "",
-    endDate: "",
-    bullets: bullets.length ? bullets : lines.slice(2),
-  }];
+  const roles: ResumeRole[] = [];
+  let headings: string[] = [];
+  let bullets: string[] = [];
+
+  const commit = () => {
+    if (!headings.length && !bullets.length) return;
+    const dateLine = headings.find((line) => dateRangePattern.test(line));
+    const dateMatch = dateLine?.match(dateRangePattern);
+    const withoutDate = headings
+      .map((line) => line.replace(dateRangePattern, "").replace(/\s*[|•]\s*$/, "").trim())
+      .filter(Boolean);
+    const locationIndex = withoutDate.findIndex((line, index) =>
+      index > 0 && (/^remote$/i.test(line) || /,\s*[A-Za-z .-]+$/.test(line))
+    );
+    const location = locationIndex >= 0 ? withoutDate.splice(locationIndex, 1)[0] : "";
+    const roleBullets = bullets.length
+      ? bullets
+      : withoutDate.slice(2).filter((line) => line.length > 28);
+    roles.push({
+      organization: withoutDate[0] ?? "",
+      title: withoutDate[1] ?? "",
+      location,
+      startDate: dateMatch?.[1] ?? "",
+      endDate: dateMatch?.[2] ?? "",
+      bullets: roleBullets,
+    });
+    headings = [];
+    bullets = [];
+  };
+
+  for (const line of lines) {
+    if (line.startsWith("• ")) {
+      bullets.push(line.slice(2).trim());
+      continue;
+    }
+    if (bullets.length) commit();
+    headings.push(line);
+  }
+  commit();
+  return roles.filter((role) => role.organization || role.title || role.bullets.length);
 }
 
-export function parseResumeHeuristically(text: string): Resume {
+function projectsFromLines(lines: string[]): ResumeProject[] {
+  return rolesFromLines(lines).map((role) => ({
+    name: role.organization || role.title,
+    date: role.endDate || role.startDate,
+    bullets: role.bullets,
+  })).filter((project) => project.name || project.bullets.length);
+}
+
+function parseResume(text: string) {
   const lines = cleanLines(text);
   const sections = sectionMap(lines);
   const header = sections.header ?? [];
@@ -100,7 +153,7 @@ export function parseResumeHeuristically(text: string): Resume {
   }).filter((group) => group.items.length);
   const educationLines = section(sections, ["education"]);
   const projectLines = section(sections, ["project"]);
-  return {
+  const resume: Resume = {
     contact: {
       name,
       email,
@@ -121,10 +174,44 @@ export function parseResumeHeuristically(text: string): Resume {
     experience: rolesFromLines(section(sections, ["experience", "employment"])),
     leadership: rolesFromLines(section(sections, ["leadership", "activities"])),
     skills,
-    projects: projectLines.length ? [{
-      name: projectLines[0] ?? "",
-      date: projectLines.find((line) => /\b(19|20)\d{2}\b/.test(line))?.match(/\b(19|20)\d{2}\b/)?.[0] ?? "",
-      bullets: projectLines.slice(1).filter((line) => line.length > 25),
-    }] : [],
+    projects: projectsFromLines(projectLines),
   };
+  return { resume, sections };
+}
+
+export function parseResumeHeuristically(text: string): Resume {
+  return parseResume(text).resume;
+}
+
+export function assessResumeQuality(
+  resume: Resume,
+  characterCount: number,
+  detectedSections: string[],
+): ParseQuality {
+  const warnings: string[] = [];
+  if (!resume.contact.name) warnings.push("We could not confidently identify the candidate name.");
+  if (!resume.experience.length) warnings.push("No experience section was detected.");
+  if (!resume.education.length) warnings.push("No education section was detected.");
+  if (!resume.skills.length) warnings.push("No skills section was detected.");
+  if (detectedSections.length < 2) warnings.push("This layout has few recognizable section headings; review the imported content carefully.");
+  const meaningfulSections = [
+    resume.summary,
+    resume.education.length,
+    resume.experience.length,
+    resume.leadership.length,
+    resume.skills.length,
+    resume.projects.length,
+  ].filter(Boolean).length;
+  return {
+    status: resume.contact.name && meaningfulSections >= 2 ? "complete" : "partial",
+    characterCount,
+    detectedSections,
+    warnings,
+  };
+}
+
+export function parseResumeWithQuality(text: string): { resume: Resume; quality: ParseQuality } {
+  const { resume, sections } = parseResume(text);
+  const detectedSections = Object.keys(sections).filter((key) => key !== "header" && sections[key]?.length);
+  return { resume, quality: assessResumeQuality(resume, text.length, detectedSections) };
 }

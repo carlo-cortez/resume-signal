@@ -1,6 +1,7 @@
 import { z } from "zod";
 
-const requiredText = z.string();
+const requiredText = z.string().max(5_000);
+const textList = z.array(requiredText).max(100);
 
 export const resumeSchema = z.object({
   contact: z.object({
@@ -18,33 +19,33 @@ export const resumeSchema = z.object({
     location: requiredText,
     graduationDate: requiredText,
     gpa: requiredText,
-    awards: z.array(requiredText),
-  })),
+    awards: textList,
+  })).max(25),
   experience: z.array(z.object({
     organization: requiredText,
     title: requiredText,
     location: requiredText,
     startDate: requiredText,
     endDate: requiredText,
-    bullets: z.array(requiredText),
-  })),
+    bullets: textList,
+  })).max(50),
   leadership: z.array(z.object({
     organization: requiredText,
     title: requiredText,
     location: requiredText,
     startDate: requiredText,
     endDate: requiredText,
-    bullets: z.array(requiredText),
-  })),
+    bullets: textList,
+  })).max(50),
   skills: z.array(z.object({
     label: requiredText,
-    items: z.array(requiredText),
-  })),
+    items: textList,
+  })).max(50),
   projects: z.array(z.object({
     name: requiredText,
     date: requiredText,
-    bullets: z.array(requiredText),
-  })),
+    bullets: textList,
+  })).max(50),
 });
 
 export const suggestionSchema = z.object({

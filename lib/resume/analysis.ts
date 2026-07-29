@@ -1,5 +1,5 @@
 import type { Resume, ResumeSuggestion, ScoreResult } from "@/types/resume";
-import { resumeToText } from "@/lib/resume/text";
+import { getResumePathLabel, resumeToText } from "@/lib/resume/text";
 
 const phrases = [
   "stakeholder management", "requirements gathering", "business analysis", "data analysis",
@@ -29,6 +29,51 @@ export function extractJobKeywords(jobDescription: string) {
   return [...new Set([...found, ...frequent])].slice(0, 20);
 }
 
+export function findJobEvidence(jobDescription: string, keyword: string) {
+  const candidates = jobDescription
+    .replace(/\r/g, "\n")
+    .split(/(?<=[.!?])\s+|\n+/)
+    .map((value) => value.replace(/\s+/g, " ").trim())
+    .filter(Boolean);
+  const normalizedKeyword = normalize(keyword);
+  const evidence = candidates.find((candidate) => normalize(candidate).includes(normalizedKeyword));
+  if (!evidence) return `The job description repeatedly uses “${keyword}”.`;
+  return evidence.length > 280 ? `${evidence.slice(0, 277).trimEnd()}…` : evidence;
+}
+
+export function normalizeStoredSuggestion(
+  value: unknown,
+  jobDescription: string,
+  analysisMode: "deterministic" | "hybrid",
+): ResumeSuggestion | null {
+  if (!value || typeof value !== "object") return null;
+  const candidate = value as Partial<ResumeSuggestion>;
+  if (typeof candidate.keyword !== "string" || typeof candidate.reason !== "string") return null;
+  const grounded = analysisMode === "hybrid" && typeof candidate.revised === "string" && Boolean(candidate.revised.trim());
+  const targetPath = typeof candidate.targetPath === "string" ? candidate.targetPath : "";
+  return {
+    keyword: candidate.keyword,
+    kind: candidate.kind === "grounded_edit" && grounded ? "grounded_edit" : "evidence_prompt",
+    source: candidate.source === "openai" && grounded ? "openai" : "deterministic",
+    jobEvidence: candidate.jobEvidence || findJobEvidence(jobDescription, candidate.keyword),
+    targetPath,
+    targetLabel: candidate.targetLabel || (targetPath ? targetPath.replace(/\.(\d+)\./g, " #$1 · ").replace(/bullets\./, "bullet ") : "Resume review"),
+    original: typeof candidate.original === "string" ? candidate.original : "",
+    revised: grounded && typeof candidate.revised === "string" ? candidate.revised : "",
+    reason: candidate.reason,
+    requiresVerification: true,
+    flag: candidate.flag === "high JD overlap" ? "high JD overlap" : "verify claim",
+  };
+}
+
+function reviewTarget(resume: Resume) {
+  if (resume.experience[0]?.bullets[0]) return "experience.0.bullets.0";
+  if (resume.summary) return "summary";
+  if (resume.leadership[0]?.bullets[0]) return "leadership.0.bullets.0";
+  if (resume.projects[0]?.bullets[0]) return "projects.0.bullets.0";
+  return "";
+}
+
 function formatHealth(resume: Resume) {
   const issues: ScoreResult["formattingIssues"] = [];
   let score = 100;
@@ -54,13 +99,23 @@ export function analyzeResume(resume: Resume, jobDescription: string): ScoreResu
   const missingKeywords = keywords.filter((keyword) => !resumeText.includes(keyword));
   const matchScore = keywords.length ? Math.round((matchedKeywords.length / keywords.length) * 100) : 0;
   const formatting = formatHealth(resume);
-  const firstBullet = resume.experience[0]?.bullets[0] ?? resume.summary;
+  const targetPath = reviewTarget(resume);
+  const original = targetPath === "summary"
+    ? resume.summary
+    : targetPath
+      ? resume[targetPath.split(".")[0] as "experience" | "leadership" | "projects"][0]?.bullets[0] ?? ""
+      : "";
   const suggestions: ResumeSuggestion[] = missingKeywords.slice(0, 4).map((keyword) => ({
     keyword,
-    targetPath: firstBullet ? (resume.experience[0]?.bullets[0] ? "experience.0.bullets.0" : "summary") : "",
-    original: firstBullet ?? "",
-    revised: firstBullet ? `${firstBullet} [If accurate, add specific evidence of ${keyword}.]` : "",
-    reason: `The job description emphasizes ${keyword}, but the résumé does not currently show evidence of it.`,
+    kind: "evidence_prompt",
+    source: "deterministic",
+    jobEvidence: findJobEvidence(jobDescription, keyword),
+    targetPath,
+    targetLabel: targetPath ? getResumePathLabel(resume, targetPath) : "Resume review",
+    original,
+    revised: "",
+    reason: `The job description emphasizes ${keyword}, but the resume does not currently show matching evidence. Verify whether you have relevant experience before editing.`,
+    requiresVerification: true,
     flag: "verify claim",
   }));
   return {

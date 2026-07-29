@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import { apiError } from "@/lib/api/errors";
+import { jobDescriptionRequestSchema, uuidQuerySchema } from "@/lib/api/schemas";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 type StoredJobDescription = {
@@ -20,7 +22,7 @@ export async function GET() {
     const userId = identity?.claims?.sub;
 
     if (authError || !userId) {
-      return NextResponse.json({ error: "Please sign in to continue." }, { status: 401 });
+      return apiError("UNAUTHORIZED", "Please sign in to continue.", 401);
     }
 
     const { data, error } = await supabase
@@ -33,41 +35,22 @@ export async function GET() {
     if (error) throw error;
     return NextResponse.json({ items: data ?? [] });
   } catch {
-    return NextResponse.json(
-      { error: "Unable to load saved job descriptions." },
-      { status: 503 },
-    );
+    return apiError("PERSISTENCE_FAILED", "Unable to load saved job descriptions.", 503);
   }
 }
 
 export async function POST(request: Request) {
   try {
-    const body = (await request.json()) as Record<string, unknown>;
-    const rawText = typeof body.rawText === "string" ? body.rawText.trim() : "";
-    const title = typeof body.title === "string" ? body.title.trim() : "";
-    const roleCategory = typeof body.roleCategory === "string" ? body.roleCategory.trim() : "";
-    const company = typeof body.company === "string" ? body.company.trim() : "";
-    const keywords = Array.isArray(body.keywords)
-      ? body.keywords.filter((value): value is string => typeof value === "string")
-      : [];
-    const matchScore = typeof body.matchScore === "number"
-      ? Math.min(100, Math.max(0, Math.round(body.matchScore)))
-      : null;
-
-    if (!rawText || !title || !roleCategory) {
-      return NextResponse.json(
-        { error: "Job description, title, and role category are required." },
-        { status: 400 },
-      );
-    }
-
     const supabase = await createSupabaseServerClient();
     const { data: identity, error: authError } = await supabase.auth.getClaims();
     const userId = identity?.claims?.sub;
 
     if (authError || !userId) {
-      return NextResponse.json({ error: "Please sign in to continue." }, { status: 401 });
+      return apiError("UNAUTHORIZED", "Please sign in to continue.", 401);
     }
+    const parsed = jobDescriptionRequestSchema.safeParse(await request.json().catch(() => null));
+    if (!parsed.success) return apiError("INVALID_REQUEST", "Job description, title, and role category are required.", 400);
+    const { rawText, title, roleCategory, company, keywords, matchScore = null } = parsed.data;
 
     const { data, error } = await supabase
       .from("job_descriptions")
@@ -78,7 +61,7 @@ export async function POST(request: Request) {
         role_category: roleCategory,
         raw_text: rawText,
         keywords_json: keywords,
-        match_score: matchScore,
+        match_score: matchScore === null ? null : Math.round(matchScore),
         outcome: "applied",
       })
       .select("id, company, title, role_category, raw_text, keywords_json, match_score, outcome, created_at")
@@ -87,10 +70,7 @@ export async function POST(request: Request) {
     if (error) throw error;
     return NextResponse.json(data, { status: 201 });
   } catch {
-    return NextResponse.json(
-      { error: "Unable to save this job description." },
-      { status: 503 },
-    );
+    return apiError("PERSISTENCE_FAILED", "Unable to save this job description.", 503);
   }
 }
 
@@ -101,28 +81,21 @@ export async function DELETE(request: Request) {
     const userId = identity?.claims?.sub;
 
     if (authError || !userId) {
-      return NextResponse.json({ error: "Please sign in to continue." }, { status: 401 });
+      return apiError("UNAUTHORIZED", "Please sign in to continue.", 401);
     }
 
-    const id = new URL(request.url).searchParams.get("id")?.trim() ?? "";
-    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id);
-
-    if (!isUuid) {
-      return NextResponse.json({ error: "A valid saved posting ID is required." }, { status: 400 });
-    }
+    const id = uuidQuerySchema.safeParse(new URL(request.url).searchParams.get("id"));
+    if (!id.success) return apiError("INVALID_REQUEST", "A valid saved posting ID is required.", 400);
 
     const { error } = await supabase
       .from("job_descriptions")
       .delete()
-      .eq("id", id)
+      .eq("id", id.data)
       .eq("user_id", userId);
 
     if (error) throw error;
     return new NextResponse(null, { status: 204 });
   } catch {
-    return NextResponse.json(
-      { error: "Unable to delete this saved posting." },
-      { status: 503 },
-    );
+    return apiError("PERSISTENCE_FAILED", "Unable to delete this saved posting.", 503);
   }
 }

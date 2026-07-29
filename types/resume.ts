@@ -57,11 +57,23 @@ export interface JobDescription {
 
 export interface ResumeSuggestion {
   keyword: string;
+  kind: "evidence_prompt" | "grounded_edit";
+  source: "deterministic" | "openai";
+  jobEvidence: string;
   targetPath: string;
+  targetLabel: string;
   original: string;
   revised: string;
   reason: string;
+  requiresVerification: boolean;
   flag: "verify claim" | "high JD overlap" | null;
+}
+
+export interface ParseQuality {
+  status: "complete" | "partial";
+  characterCount: number;
+  detectedSections: string[];
+  warnings: string[];
 }
 
 export interface ScoreResult {

@@ -2,8 +2,9 @@ import "server-only";
 
 import OpenAI from "openai";
 import { zodTextFormat } from "openai/helpers/zod";
+import { findJobEvidence } from "@/lib/resume/analysis";
 import { resumeSchema, suggestionSchema } from "@/lib/resume/schema";
-import { getResumeValue, resumeToText } from "@/lib/resume/text";
+import { getResumePathLabel, getResumeValue, resumeToText } from "@/lib/resume/text";
 import type { Resume, ResumeSuggestion } from "@/types/resume";
 
 function client() {
@@ -53,7 +54,19 @@ export async function createGroundedSuggestions(resume: Resume, jobDescription: 
     text: { format: zodTextFormat(suggestionSchema, "resume_suggestions") },
   });
   const suggestions = response.output_parsed?.suggestions ?? [];
-  return suggestions.filter((suggestion: ResumeSuggestion) =>
-    Boolean(suggestion.targetPath) && getResumeValue(resume, suggestion.targetPath) === suggestion.original
-  );
+  return suggestions
+    .filter((suggestion) =>
+      Boolean(suggestion.targetPath) &&
+      Boolean(suggestion.revised.trim()) &&
+      suggestion.revised !== suggestion.original &&
+      getResumeValue(resume, suggestion.targetPath) === suggestion.original
+    )
+    .map((suggestion): ResumeSuggestion => ({
+      ...suggestion,
+      kind: "grounded_edit",
+      source: "openai",
+      jobEvidence: findJobEvidence(jobDescription, suggestion.keyword),
+      targetLabel: getResumePathLabel(resume, suggestion.targetPath),
+      requiresVerification: true,
+    }));
 }

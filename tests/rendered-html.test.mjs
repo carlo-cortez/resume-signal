@@ -32,6 +32,10 @@ test("defines the production Resume Signal workspace", async () => {
   assert.match(page, /applyResumeSuggestion/);
   assert.match(page, /\/api\/resumes\/parse/);
   assert.match(page, /\/api\/scans/);
+  assert.match(page, /Job-description evidence/);
+  assert.match(page, /Keyword comparison/);
+  assert.match(page, /Restore for review/);
+  assert.match(page, /loadMoreScans/);
   assert.match(page, /event\.target\.value = ""/);
   assert.match(page, /hasResumeBody/);
   assert.match(page, /Preview not updated/);
@@ -53,11 +57,13 @@ test("defines the production Resume Signal workspace", async () => {
 });
 
 test("uses Google-only authentication and per-user Supabase persistence", async () => {
-  const [database, migration, ownershipMigration, productionMigration, route, environmentExample, authActions, authShell, page] = await Promise.all([
+  const [database, migration, ownershipMigration, productionMigration, privacyMigration, dropMigration, route, environmentExample, authActions, authShell, page] = await Promise.all([
     readFile(new URL("db/supabase.ts", root), "utf8"),
     readFile(new URL("supabase/migrations/20260721000000_create_job_descriptions.sql", root), "utf8"),
     readFile(new URL("supabase/migrations/20260721010000_add_user_ownership.sql", root), "utf8"),
     readFile(new URL("supabase/migrations/20260724000000_add_resumes_and_scans.sql", root), "utf8"),
+    readFile(new URL("supabase/migrations/20260728000000_clear_resume_source_text.sql", root), "utf8"),
+    readFile(new URL("supabase/migrations/20260728010000_drop_resume_source_text.sql", root), "utf8"),
     readFile(new URL("app/api/job-descriptions/route.ts", root), "utf8"),
     readFile(new URL(".env.example", root), "utf8"),
     readFile(new URL("app/auth/actions.ts", root), "utf8"),
@@ -72,6 +78,8 @@ test("uses Google-only authentication and per-user Supabase persistence", async 
   assert.match(productionMigration, /public\.resume_versions/);
   assert.match(productionMigration, /public\.resume_scans/);
   assert.match(productionMigration, /enable row level security/);
+  assert.match(privacyMigration, /set source_text = null/);
+  assert.match(dropMigration, /drop column if exists source_text/);
   assert.match(route, /export async function GET/);
   assert.match(route, /export async function POST/);
   assert.match(route, /export async function DELETE/);
@@ -99,13 +107,20 @@ test("implements validated parsing, scoring, semantic fallback, and export", asy
   assert.match(parser, /MAX_RESUME_BYTES = 5 \* 1024 \* 1024/);
   assert.match(parser, /extractRawText/);
   assert.match(parser, /pdfjs-dist/);
+  assert.match(parser, /parseResumeWithQuality/);
+  assert.match(parser, /detectedSections/);
   assert.match(analysis, /formatHealth/);
   assert.match(analysis, /extractJobKeywords/);
+  assert.match(analysis, /findJobEvidence/);
+  assert.match(analysis, /kind: "evidence_prompt"/);
   assert.match(semantic, /responses\.parse/);
   assert.match(semantic, /zodTextFormat/);
   assert.match(semantic, /Never invent/);
   assert.match(parseRoute, /authenticatedSupabase/);
+  assert.doesNotMatch(parseRoute, /extractedText,/);
   assert.match(scanRoute, /analysisMode = "hybrid"/);
+  assert.match(scanRoute, /export async function GET/);
+  assert.match(scanRoute, /export async function DELETE/);
   assert.match(exportRoute, /application\/vnd\.openxmlformats/);
   assert.match(docxExport, /Packer\.toBuffer/);
   assert.match(nextConfig, /serverExternalPackages: \["pdfjs-dist"\]/);
