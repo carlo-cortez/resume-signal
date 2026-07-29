@@ -83,7 +83,8 @@ test("uses Google-only authentication and per-user Supabase persistence", async 
   assert.match(route, /export async function GET/);
   assert.match(route, /export async function POST/);
   assert.match(route, /export async function DELETE/);
-  assert.match(environmentExample, /OPENAI_API_KEY=/);
+  assert.match(environmentExample, /GROQ_API_KEY=/);
+  assert.match(environmentExample, /GROQ_MODEL=openai\/gpt-oss-20b/);
   assert.match(authActions, /provider: "google"/);
   assert.doesNotMatch(authActions, /signInWithPassword|signUp\(|resetPasswordForEmail|updateUser/);
   assert.doesNotMatch(authShell, /Supabase|authentication|row-level/);
@@ -115,6 +116,8 @@ test("implements validated parsing, scoring, semantic fallback, and export", asy
   assert.match(analysis, /kind: "evidence_prompt"/);
   assert.match(semantic, /responses\.parse/);
   assert.match(semantic, /zodTextFormat/);
+  assert.match(semantic, /https:\/\/api\.groq\.com\/openai\/v1/);
+  assert.match(semantic, /process\.env\.GROQ_API_KEY/);
   assert.match(semantic, /Never invent/);
   assert.match(parseRoute, /authenticatedSupabase/);
   assert.doesNotMatch(parseRoute, /extractedText,/);

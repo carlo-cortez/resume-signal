@@ -14,8 +14,8 @@ Requires Node.js 22.13 or newer.
 SUPABASE_URL=https://your-project-ref.supabase.co
 SUPABASE_PUBLISHABLE_KEY=sb_publishable_your-key
 SUPABASE_SECRET_KEY=your-server-only-secret-key
-OPENAI_API_KEY=optional-server-only-key
-OPENAI_MODEL=gpt-5.6-luna
+GROQ_API_KEY=optional-server-only-key
+GROQ_MODEL=openai/gpt-oss-20b
 ```
 
 4. Configure Google-only authentication:
@@ -49,7 +49,7 @@ Open `http://localhost:3000/login` and continue with Google. The first successfu
 - Job-description keyword extraction from the complete pasted description
 - Deterministic format-health and role-match scores based on the parsed résumé
 - Matched and missing keyword evidence
-- Optional OpenAI Structured Output suggestions with deterministic fallback
+- Optional Groq-hosted Structured Output suggestions with deterministic fallback
 - Evidence-first suggestion cards that cite the JD phrase and target resume section
 - Grounded AI-assisted diffs that update the résumé only after explicit acceptance; local evidence prompts never auto-apply
 - Print-friendly Harvard-style résumé preview
@@ -75,7 +75,7 @@ Open `http://localhost:3000/login` and continue with Google. The first successfu
 1. Apply the résumé/version/scan migration and `20260728000000_clear_resume_source_text.sql`. This makes the legacy raw-text field nullable and erases retained values.
 2. Run the upgraded application and verify that parsing, version saving, and history still work. New code stores only structured resume data.
 3. After that verification, apply `20260728010000_drop_resume_source_text.sql` to remove the deprecated field. Existing projects should not combine these two privacy phases into one unattended push.
-4. Optionally add `OPENAI_API_KEY` for semantic structuring and suggestions; deterministic analysis works without it.
+4. Optionally add `GROQ_API_KEY` for Groq-hosted semantic structuring and suggestions; deterministic analysis works without it.
 5. Configure the production Google OAuth origin, Supabase callback, consent-screen branding, and deployment redirect URL before opening access publicly.
 6. Add monitoring, rate limiting, backups, and a production domain during deployment.
 

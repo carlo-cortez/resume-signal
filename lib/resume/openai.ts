@@ -7,16 +7,24 @@ import { resumeSchema, suggestionSchema } from "@/lib/resume/schema";
 import { getResumePathLabel, getResumeValue, resumeToText } from "@/lib/resume/text";
 import type { Resume, ResumeSuggestion } from "@/types/resume";
 
+const GROQ_BASE_URL = "https://api.groq.com/openai/v1";
+const DEFAULT_GROQ_MODEL = "openai/gpt-oss-20b";
+
 function client() {
-  return process.env.OPENAI_API_KEY ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY }) : null;
+  const apiKey = process.env.GROQ_API_KEY?.trim();
+  return apiKey ? new OpenAI({ apiKey, baseURL: GROQ_BASE_URL }) : null;
+}
+
+function model() {
+  return process.env.GROQ_MODEL?.trim() || DEFAULT_GROQ_MODEL;
 }
 
 export async function structureResumeWithAI(text: string) {
   const openai = client();
   if (!openai) return null;
   const response = await openai.responses.parse({
-    model: process.env.OPENAI_MODEL || "gpt-5.6-luna",
-    reasoning: { effort: "none" },
+    model: model(),
+    reasoning: { effort: "low" },
     input: [
       {
         role: "system",
@@ -33,8 +41,8 @@ export async function createGroundedSuggestions(resume: Resume, jobDescription: 
   const openai = client();
   if (!openai || !missingKeywords.length) return null;
   const response = await openai.responses.parse({
-    model: process.env.OPENAI_MODEL || "gpt-5.6-luna",
-    reasoning: { effort: "none" },
+    model: model(),
+    reasoning: { effort: "low" },
     input: [
       {
         role: "system",

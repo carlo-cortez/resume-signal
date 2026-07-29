@@ -618,8 +618,8 @@ export default function Home() {
                 <span aria-hidden="true">→</span>
               </button>
               <p className="demo-note">
-                Scores use the resume shown in the preview. Semantic suggestions activate
-                when a server-side analysis key is configured.
+                Your score reflects the resume currently shown. Advanced suggestions
+                appear after the scan when enhanced analysis is enabled.
               </p>
               {scanError && <p className="save-error" role="alert">{scanError}</p>}
             </div>
