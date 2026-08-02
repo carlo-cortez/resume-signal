@@ -99,6 +99,22 @@ function hasResumeBody(resume: Resume) {
   );
 }
 
+function escapeRegExp(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function HighlightedText({ text, keywords, enabled }: { text: string; keywords: string[]; enabled: boolean }) {
+  const terms = [...new Set(keywords.map((keyword) => keyword.trim()).filter(Boolean))]
+    .sort((left, right) => right.length - left.length);
+  if (!enabled || !terms.length || !text) return <>{text}</>;
+
+  const normalized = new Set(terms.map((term) => term.toLowerCase()));
+  const parts = text.split(new RegExp(`(${terms.map(escapeRegExp).join("|")})`, "gi"));
+  return <>{parts.map((part, index) => normalized.has(part.toLowerCase())
+    ? <mark className="match-highlight" key={`${part}-${index}`}>{part}</mark>
+    : part)}</>;
+}
+
 export default function Home() {
   const [tab, setTab] = useState<Tab>("scan");
   const [jobDescription, setJobDescription] = useState("");
@@ -136,12 +152,32 @@ export default function Home() {
   const [previewScale, setPreviewScale] = useState(1);
   const [previewMode, setPreviewMode] = useState<PreviewMode>("readable");
   const [showEditor, setShowEditor] = useState(false);
+  const [isTailoredDraft, setIsTailoredDraft] = useState(false);
+  const [scoreIsStale, setScoreIsStale] = useState(false);
   const previewFrameRef = useRef<HTMLDivElement>(null);
 
   const matchedKeywords = analysis?.matchedKeywords ?? [];
   const missingKeywords = analysis?.missingKeywords ?? [];
   const matchScore = analysis?.matchScore ?? 0;
   const suggestions = analysis?.suggestions ?? [];
+  const previewStage = parseStatus !== "ready"
+    ? "Sample resume"
+    : isTailoredDraft
+      ? "Tailored draft"
+      : hasScanned
+        ? "Analyzed resume"
+        : "Original resume";
+  const previewStageDescription = previewStage === "Original resume"
+    ? `${resumeFile} · This is your uploaded baseline. Run an ATS scan to compare it with the job description.`
+    : previewStage === "Analyzed resume"
+      ? `Compared with ${company.trim() || roleTitle.trim() || roleCategory}. Matching language is highlighted in green.`
+      : previewStage === "Tailored draft"
+        ? !hasScanned
+          ? "This draft differs from the uploaded baseline. Run an ATS scan to compare it with the job description."
+          : scoreIsStale
+          ? "This draft has changed since the last scan. Run the scan again to refresh its score and highlights."
+          : `Tailored for ${company.trim() || roleTitle.trim() || roleCategory}. The score and highlights reflect this draft.`
+        : "Upload a resume to replace this sample.";
   const roleProfiles = useMemo<RoleProfile[]>(() => roleCategoryOptions.map((name) => {
     const postings = hostedPostings.filter((posting) => posting.role_category === name);
     const counts = new Map<string, number>();
@@ -260,6 +296,8 @@ export default function Home() {
     setAnalysis(null);
     setParseMessage("");
     setParseQuality(null);
+    setIsTailoredDraft(false);
+    setScoreIsStale(false);
     if (!file) {
       setParseStatus("idle");
       return;
@@ -320,6 +358,7 @@ export default function Home() {
       if (!response.ok) throw new Error(apiMessage(data, "Scan failed."));
       setAnalysis(data);
       setHasScanned(true);
+      setScoreIsStale(false);
     } catch (error) {
       setScanError(error instanceof Error ? error.message : "Unable to run this scan.");
       setHasScanned(false);
@@ -398,6 +437,8 @@ export default function Home() {
     setParseMessage(`Version ${version.version_number} restored for review. Saving creates a new version.`);
     setAnalysis(null);
     setHasScanned(false);
+    setIsTailoredDraft(false);
+    setScoreIsStale(false);
     setShowEditor(false);
     setPreviewMode("readable");
     setTab("scan");
@@ -418,6 +459,8 @@ export default function Home() {
     });
     setHasScanned(true);
     setResolutions({});
+    setIsTailoredDraft(false);
+    setScoreIsStale(false);
     setTab("scan");
   }
 
@@ -451,6 +494,15 @@ export default function Home() {
     if (suggestion.kind !== "grounded_edit" || suggestion.source !== "openai") return;
     setResume((current) => applyResumeSuggestion(current, suggestion.targetPath, suggestion.revised));
     setResolutions((current) => ({ ...current, [suggestion.keyword]: "accepted" }));
+    setIsTailoredDraft(true);
+    setScoreIsStale(true);
+    setVersionStatus("idle");
+  }
+
+  function markResumeEdited() {
+    setIsTailoredDraft(true);
+    setScoreIsStale(hasScanned);
+    setVersionStatus("idle");
   }
 
   async function downloadDocx() {
@@ -618,8 +670,8 @@ export default function Home() {
                 <span aria-hidden="true">→</span>
               </button>
               <p className="demo-note">
-                Your score reflects the resume currently shown. Advanced suggestions
-                appear after the scan when enhanced analysis is enabled.
+                Your score reflects the last completed scan. After changing the resume,
+                scan again to refresh the score and highlighted evidence.
               </p>
               {scanError && <p className="save-error" role="alert">{scanError}</p>}
             </div>
@@ -709,7 +761,7 @@ export default function Home() {
           <section className="preview-column">
             <div className="preview-header">
               <div>
-                <p className="eyebrow">{parseStatus === "ready" ? "Your document preview" : "Sample document preview"}</p>
+                <p className="eyebrow">{previewStage}</p>
                 <h2>Harvard-style resume</h2>
               </div>
               <div className="preview-actions">
@@ -748,9 +800,14 @@ export default function Home() {
               </div>
             )}
             {parseStatus === "ready" && (
-              <div className="preview-notice ready" role="status">
-                <strong>Preview updated</strong>
-                <span>{resumeFile}</span>
+              <div className={`preview-notice ready ${scoreIsStale ? "stale" : ""}`} role="status">
+                <strong>{previewStage}</strong>
+                <span>{previewStageDescription}</span>
+                {scoreIsStale && (
+                  <button type="button" onClick={runScan} disabled={!jobDescription.trim() || isScanning}>
+                    {isScanning ? "Scanning…" : "Refresh score"}
+                  </button>
+                )}
               </div>
             )}
             {showEditor && (
@@ -761,17 +818,26 @@ export default function Home() {
                       <span>{titleCase(field)}</span>
                       <input
                         value={resume.contact[field]}
-                        onChange={(event) => setResume((current) => ({
-                          ...current,
-                          contact: { ...current.contact, [field]: event.target.value },
-                        }))}
+                        onChange={(event) => {
+                          setResume((current) => ({
+                            ...current,
+                            contact: { ...current.contact, [field]: event.target.value },
+                          }));
+                          markResumeEdited();
+                        }}
                       />
                     </label>
                   ))}
                 </div>
                 <label>
                   <span>Professional summary</span>
-                  <textarea value={resume.summary} onChange={(event) => setResume((current) => ({ ...current, summary: event.target.value }))} />
+                  <textarea
+                    value={resume.summary}
+                    onChange={(event) => {
+                      setResume((current) => ({ ...current, summary: event.target.value }));
+                      markResumeEdited();
+                    }}
+                  />
                 </label>
                 {resume.experience.map((role, roleIndex) => (
                   <fieldset key={`${role.organization}-${roleIndex}`}>
@@ -781,11 +847,14 @@ export default function Home() {
                         key={bulletIndex}
                         value={bullet}
                         aria-label={`Experience ${roleIndex + 1} bullet ${bulletIndex + 1}`}
-                        onChange={(event) => setResume((current) => {
-                          const next = structuredClone(current);
-                          next.experience[roleIndex].bullets[bulletIndex] = event.target.value;
-                          return next;
-                        })}
+                        onChange={(event) => {
+                          setResume((current) => {
+                            const next = structuredClone(current);
+                            next.experience[roleIndex].bullets[bulletIndex] = event.target.value;
+                            return next;
+                          });
+                          markResumeEdited();
+                        }}
                       />
                     ))}
                   </fieldset>
@@ -804,7 +873,7 @@ export default function Home() {
 
                   {resume.summary && (
                     <ResumeSection title="Professional Summary">
-                      <p className="summary-copy">{resume.summary}</p>
+                      <p className="summary-copy"><HighlightedText text={resume.summary} keywords={matchedKeywords} enabled={hasScanned} /></p>
                     </ResumeSection>
                   )}
 
@@ -812,9 +881,9 @@ export default function Home() {
                     <ResumeSection title="Education">
                       {resume.education.map((item, index) => (
                         <div className="resume-entry" key={`${item.school}-${index}`}>
-                          <div className="resume-line"><strong>{item.school}</strong><span>{item.location}</span></div>
+                          <div className="resume-line"><strong><HighlightedText text={item.school} keywords={matchedKeywords} enabled={hasScanned} /></strong><span>{item.location}</span></div>
                           <div className="resume-line">
-                            <span>{item.degree}{item.gpa && <> · <strong>GPA:</strong> {item.gpa}</>}</span>
+                            <span><HighlightedText text={item.degree} keywords={matchedKeywords} enabled={hasScanned} />{item.gpa && <> · <strong>GPA:</strong> {item.gpa}</>}</span>
                             <span>{item.graduationDate}</span>
                           </div>
                           {item.awards.length > 0 && <div className="education-details"><p><strong>Awards:</strong> {item.awards.join("; ")}</p></div>}
@@ -828,12 +897,12 @@ export default function Home() {
                       {resume.experience.map((role, index) => (
                         <ResumeRole
                           key={`${role.organization}-${role.title}-${index}`}
-                          organization={role.organization}
+                          organization={<HighlightedText text={role.organization} keywords={matchedKeywords} enabled={hasScanned} />}
                           location={role.location}
-                          title={role.title}
+                          title={<HighlightedText text={role.title} keywords={matchedKeywords} enabled={hasScanned} />}
                           date={[role.startDate, role.endDate].filter(Boolean).join(" - ")}
                         >
-                          {role.bullets.map((bullet, bulletIndex) => <li key={bulletIndex}>{bullet}</li>)}
+                          {role.bullets.map((bullet, bulletIndex) => <li key={bulletIndex}><HighlightedText text={bullet} keywords={matchedKeywords} enabled={hasScanned} /></li>)}
                         </ResumeRole>
                       ))}
                     </ResumeSection>
@@ -844,12 +913,12 @@ export default function Home() {
                       {resume.leadership.map((role, index) => (
                         <ResumeRole
                           key={`${role.organization}-${role.title}-${index}`}
-                          organization={role.organization}
+                          organization={<HighlightedText text={role.organization} keywords={matchedKeywords} enabled={hasScanned} />}
                           location={role.location}
-                          title={role.title}
+                          title={<HighlightedText text={role.title} keywords={matchedKeywords} enabled={hasScanned} />}
                           date={[role.startDate, role.endDate].filter(Boolean).join(" - ")}
                         >
-                          {role.bullets.map((bullet, bulletIndex) => <li key={bulletIndex}>{bullet}</li>)}
+                          {role.bullets.map((bullet, bulletIndex) => <li key={bulletIndex}><HighlightedText text={bullet} keywords={matchedKeywords} enabled={hasScanned} /></li>)}
                         </ResumeRole>
                       ))}
                     </ResumeSection>
@@ -858,7 +927,7 @@ export default function Home() {
                   {resume.skills.length > 0 && (
                     <ResumeSection title="Skills & Interests">
                       {resume.skills.map((group) => (
-                        <p className="skill-line" key={group.label}><strong>{group.label}:</strong> {group.items.join(", ")}</p>
+                        <p className="skill-line" key={group.label}><strong>{group.label}:</strong> <HighlightedText text={group.items.join(", ")} keywords={matchedKeywords} enabled={hasScanned} /></p>
                       ))}
                     </ResumeSection>
                   )}
@@ -866,8 +935,8 @@ export default function Home() {
                   {resume.projects.length > 0 && (
                     <ResumeSection title="Projects">
                       {resume.projects.map((project, index) => (
-                        <ResumeProject key={`${project.name}-${index}`} name={project.name} date={project.date}>
-                          {project.bullets.map((bullet, bulletIndex) => <li key={bulletIndex}>{bullet}</li>)}
+                        <ResumeProject key={`${project.name}-${index}`} name={<HighlightedText text={project.name} keywords={matchedKeywords} enabled={hasScanned} />} date={project.date}>
+                          {project.bullets.map((bullet, bulletIndex) => <li key={bulletIndex}><HighlightedText text={bullet} keywords={matchedKeywords} enabled={hasScanned} /></li>)}
                         </ResumeProject>
                       ))}
                     </ResumeSection>
@@ -875,10 +944,12 @@ export default function Home() {
                 </div>
               </div>
             </div>
-            <div className="preview-legend">
-              <span><i className="legend-hit" /> Language already supported by your resume</span>
-              <span><i className="legend-gap" /> Suggested language needs your verification</span>
-            </div>
+            {hasScanned && (
+              <div className="preview-legend">
+                <span><i className="legend-hit" /> Green highlights show language already supported by your resume</span>
+                <span><i className="legend-gap" /> Orange suggestion cards require your verification</span>
+              </div>
+            )}
           </section>
         </section>
       ) : tab === "library" ? (
@@ -1053,7 +1124,7 @@ function ResumeSection({ title, children }: { title: string; children: React.Rea
   return <section className="resume-section"><h3>{title}</h3>{children}</section>;
 }
 
-function ResumeRole({ organization, location, title, date, children }: { organization: string; location: string; title: string; date: string; children: React.ReactNode }) {
+function ResumeRole({ organization, location, title, date, children }: { organization: React.ReactNode; location: string; title: React.ReactNode; date: string; children: React.ReactNode }) {
   return (
     <div className="resume-role">
       <div className="resume-line"><strong>{organization}</strong><span>{location}</span></div>
@@ -1063,7 +1134,7 @@ function ResumeRole({ organization, location, title, date, children }: { organiz
   );
 }
 
-function ResumeProject({ name, date, children }: { name: string; date: string; children: React.ReactNode }) {
+function ResumeProject({ name, date, children }: { name: React.ReactNode; date: string; children: React.ReactNode }) {
   return (
     <div className="resume-role">
       <div className="resume-line"><strong>{name}</strong><span>{date}</span></div>

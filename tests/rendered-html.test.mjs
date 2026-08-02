@@ -36,6 +36,11 @@ test("defines the production Resume Signal workspace", async () => {
   assert.match(page, /Keyword comparison/);
   assert.match(page, /Restore for review/);
   assert.match(page, /loadMoreScans/);
+  assert.match(page, /Original resume/);
+  assert.match(page, /Analyzed resume/);
+  assert.match(page, /Tailored draft/);
+  assert.match(page, /HighlightedText/);
+  assert.match(page, /Refresh score/);
   assert.match(page, /event\.target\.value = ""/);
   assert.match(page, /hasResumeBody/);
   assert.match(page, /Preview not updated/);
