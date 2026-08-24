@@ -146,6 +146,9 @@ textarea:focus { border-color: var(--forest); outline: 3px solid rgba(23,79,63,.
 .primary-button:hover:not(:disabled), .profile-action:hover { background: var(--forest-deep); transform: translateY(-1px); }
 .primary-button:disabled { background: #a8afab; cursor: not-allowed; }
 .demo-note { margin: 11px 2px 0; color: var(--muted); font-size: 10px; line-height: 1.45; }
+.base-resume-note { margin: 0; padding: 13px; border-left: 3px solid var(--forest); border-radius: 0 8px 8px 0; color: var(--ink-soft); background: var(--sage-light); font: 12px/1.55 Georgia, serif; }
+.workspace-resume .controls-column { background: rgba(255,253,248,.42); }
+.workspace-resume .preview-column { min-height: 760px; }
 
 .score-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; margin-bottom: 19px; }
 .score-card { border: 1px solid var(--line); border-radius: 11px; padding: 14px; background: var(--paper); }
@@ -252,6 +255,16 @@ textarea:focus { border-color: var(--forest); outline: 3px solid rgba(23,79,63,.
 .library-intro h2 { max-width: 680px; margin: 0; font: 500 clamp(33px, 4.2vw, 55px)/1.02 Georgia, serif; letter-spacing: -.04em; }
 .library-intro > p:last-child { margin: 0; color: var(--muted); font: 14px/1.65 Georgia, serif; }
 .library-grid { display: grid; grid-template-columns: 270px 1fr; gap: 16px; }
+.keyword-capture { display: grid; grid-template-columns: minmax(220px, .75fr) minmax(320px, 1.25fr); gap: 28px; margin: 0 0 26px; padding: 25px; border: 1px solid #a8bcaf; border-radius: 14px; background: #edf5ef; }
+.keyword-capture .eyebrow { margin-bottom: 7px; }
+.keyword-capture h3 { margin: 0; font: 500 23px/1.15 Georgia, serif; }
+.keyword-capture > div > p:last-child { margin: 10px 0 0; color: var(--ink-soft); font-size: 12px; line-height: 1.55; }
+.keyword-capture-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+.keyword-capture-fields input { min-width: 0; height: 40px; border: 1px solid #a8bcaf; border-radius: 8px; padding: 0 11px; color: var(--ink); background: white; font-size: 11px; }
+.keyword-capture-fields textarea, .keyword-capture-fields .primary-button, .keyword-capture-fields .keyword-save-status, .keyword-capture-fields .save-error { grid-column: 1 / -1; }
+.keyword-capture-fields textarea { min-height: 125px; background: white; }
+.keyword-capture-fields .primary-button { margin-top: 2px; }
+.keyword-save-status { margin: 0; color: var(--forest); font-size: 11px; font-weight: 700; }
 .role-list { display: flex; flex-direction: column; gap: 7px; }
 .role-list button { display: grid; gap: 4px; padding: 14px; border: 1px solid var(--line); border-radius: 10px; text-align: left; color: var(--ink); background: rgba(255,253,248,.6); }
 .role-list button.active { color: white; border-color: var(--forest); background: var(--forest); }
@@ -347,7 +360,7 @@ footer strong { color: var(--ink); }
   .hero-principle { max-width: 400px; }
   .tabs { overflow-x: auto; }
   .tabs button { white-space: nowrap; }
-  .library-intro, .library-grid, .frequency-columns, .history-intro, .history-grid { grid-template-columns: 1fr; }
+  .library-intro, .library-grid, .frequency-columns, .history-intro, .history-grid, .keyword-capture { grid-template-columns: 1fr; }
   .library-intro, .history-intro { gap: 18px; }
   .library-intro > p:last-child, .history-intro > p:last-child { margin-top: 18px; }
   .role-list { display: grid; grid-template-columns: 1fr 1fr; }

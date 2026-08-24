@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { apiError } from "@/lib/api/errors";
 import { jobDescriptionRequestSchema, uuidQuerySchema } from "@/lib/api/schemas";
+import { extractJobKeywords } from "@/lib/resume/analysis";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 type StoredJobDescription = {
@@ -60,7 +61,7 @@ export async function POST(request: Request) {
         title,
         role_category: roleCategory,
         raw_text: rawText,
-        keywords_json: keywords,
+        keywords_json: keywords.length ? keywords : extractJobKeywords(rawText),
         match_score: matchScore === null ? null : Math.round(matchScore),
         outcome: "applied",
       })

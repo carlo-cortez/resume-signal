@@ -13,14 +13,15 @@ test("defines the production Resume Signal workspace", async () => {
     readFile(new URL("package.json", root), "utf8"),
   ]);
 
-  assert.match(page, /Build the version of your resume this role needs/);
-  assert.match(page, /Scan & build/);
-  assert.match(page, /JD library/);
+  assert.match(page, /Build a credible base resume, then tailor only when it helps/);
+  assert.match(page, /My resume/);
+  assert.match(page, /Career keyword library/);
+  assert.match(page, /Build a job-title keyword profile/);
+  assert.match(page, /AI review suggestions/);
   assert.match(page, /"Systems Analyst"/);
   assert.match(page, /"Project Coordinator"/);
   assert.match(page, /"Operations Analyst"/);
   assert.match(page, /"QA \/ UAT Analyst"/);
-  assert.match(page, /Save postings in this category to build a keyword profile/);
   assert.match(page, /Harvard-style resume/);
   assert.match(page, /resume\.contact\.name/);
   assert.match(page, /resume\.experience\.map/);

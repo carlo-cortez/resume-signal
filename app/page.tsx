@@ -5,7 +5,7 @@ import { sampleResume } from "@/lib/resume/sample";
 import { applyResumeSuggestion } from "@/lib/resume/text";
 import type { ParseQuality, Resume, ResumeSuggestion, ScoreResult } from "@/types/resume";
 
-type Tab = "scan" | "library" | "history";
+type Tab = "resume" | "keywords" | "review" | "draft" | "history";
 type Resolution = "accepted" | "rejected";
 type PreviewMode = "readable" | "page";
 
@@ -116,7 +116,7 @@ function HighlightedText({ text, keywords, enabled }: { text: string; keywords: 
 }
 
 export default function Home() {
-  const [tab, setTab] = useState<Tab>("scan");
+  const [tab, setTab] = useState<Tab>("resume");
   const [jobDescription, setJobDescription] = useState("");
   const [resumeFile, setResumeFile] = useState("");
   const [resume, setResume] = useState<Resume>(sampleResume);
@@ -141,6 +141,10 @@ export default function Home() {
   const [expandedPostingId, setExpandedPostingId] = useState<string | null>(null);
   const [deletingPostingId, setDeletingPostingId] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState("");
+  const [keywordTitle, setKeywordTitle] = useState("");
+  const [keywordCompany, setKeywordCompany] = useState("");
+  const [keywordDescription, setKeywordDescription] = useState("");
+  const [keywordSaveStatus, setKeywordSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [savedResumes, setSavedResumes] = useState<SavedResume[]>([]);
   const [resumeVersions, setResumeVersions] = useState<ResumeVersion[]>([]);
   const [scanHistory, setScanHistory] = useState<StoredScan[]>([]);
@@ -160,6 +164,7 @@ export default function Home() {
   const missingKeywords = analysis?.missingKeywords ?? [];
   const matchScore = analysis?.matchScore ?? 0;
   const suggestions = analysis?.suggestions ?? [];
+  const scanVisible = hasScanned && tab !== "resume";
   const previewStage = parseStatus !== "ready"
     ? "Sample resume"
     : isTailoredDraft
@@ -178,8 +183,12 @@ export default function Home() {
           ? "This draft has changed since the last scan. Run the scan again to refresh its score and highlights."
           : `Tailored for ${company.trim() || roleTitle.trim() || roleCategory}. The score and highlights reflect this draft.`
         : "Upload a resume to replace this sample.";
-  const roleProfiles = useMemo<RoleProfile[]>(() => roleCategoryOptions.map((name) => {
-    const postings = hostedPostings.filter((posting) => posting.role_category === name);
+  const roleProfiles = useMemo<RoleProfile[]>(() => {
+    const titles = [...new Map(hostedPostings.map((posting) => [posting.title.trim().toLowerCase(), posting.title.trim()])).values()]
+      .filter(Boolean)
+      .sort((left, right) => left.localeCompare(right));
+    return titles.map((name) => {
+    const postings = hostedPostings.filter((posting) => posting.title.trim().toLowerCase() === name.toLowerCase());
     const counts = new Map<string, number>();
     for (const posting of postings) {
       for (const keyword of new Set(posting.keywords_json ?? [])) {
@@ -202,8 +211,15 @@ export default function Home() {
         outcome: posting.outcome,
       })),
     };
-  }), [hostedPostings]);
-  const activeProfile = roleProfiles[profileIndex] ?? roleProfiles[0];
+    });
+  }, [hostedPostings]);
+  const activeProfile = roleProfiles[profileIndex] ?? roleProfiles[0] ?? {
+    name: "No job title selected",
+    subtitle: "Save a job description to begin",
+    core: [],
+    variable: [],
+    postings: [],
+  };
   const contactLine = [
     resume.contact.location,
     resume.contact.phone,
@@ -212,7 +228,7 @@ export default function Home() {
   ].filter(Boolean).join(" • ");
 
   useEffect(() => {
-    if (tab !== "library") return;
+    if (tab !== "keywords") return;
     fetch("/api/job-descriptions")
       .then(async (response) => {
         if (!response.ok) throw new Error("Database unavailable");
@@ -391,6 +407,33 @@ export default function Home() {
     }
   }
 
+  async function saveKeywordPosting() {
+    if (!keywordTitle.trim() || !keywordDescription.trim()) return;
+    setKeywordSaveStatus("saving");
+    try {
+      const response = await fetch("/api/job-descriptions", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          company: keywordCompany,
+          title: keywordTitle,
+          roleCategory: keywordTitle,
+          rawText: keywordDescription,
+          keywords: [],
+          matchScore: null,
+        }),
+      });
+      const saved = await response.json() as SavedPosting & ApiErrorPayload;
+      if (!response.ok) throw new Error(apiMessage(saved, "Save failed"));
+      setHostedPostings((current) => [saved, ...current]);
+      setKeywordDescription("");
+      setKeywordCompany("");
+      setKeywordSaveStatus("saved");
+    } catch {
+      setKeywordSaveStatus("error");
+    }
+  }
+
   async function deleteSavedPosting(posting: SavedPosting) {
     const label = posting.company ? `${posting.title} at ${posting.company}` : posting.title;
     if (!window.confirm(`Delete ${label}? This cannot be undone.`)) return;
@@ -441,7 +484,7 @@ export default function Home() {
     setScoreIsStale(false);
     setShowEditor(false);
     setPreviewMode("readable");
-    setTab("scan");
+    setTab("resume");
   }
 
   function reopenScan(scan: StoredScan) {
@@ -461,7 +504,7 @@ export default function Home() {
     setResolutions({});
     setIsTailoredDraft(false);
     setScoreIsStale(false);
-    setTab("scan");
+    setTab("review");
   }
 
   async function deleteStoredScan(scan: StoredScan) {
@@ -568,10 +611,10 @@ export default function Home() {
       <section className="hero" id="top">
         <div>
           <p className="eyebrow">Personal resume workspace</p>
-          <h1>Build the version of your resume this role needs.</h1>
+          <h1>Build a credible base resume, then tailor only when it helps.</h1>
           <p className="hero-copy">
-            Compare your experience with a job description, find credible gaps,
-            and shape a clean, ATS-safe resume while you stay in control of every edit.
+            Learn the language that repeats across the roles you want, strengthen your base resume,
+            and use job-specific reviews without inventing experience.
           </p>
         </div>
         <div className="hero-principle">
@@ -584,11 +627,17 @@ export default function Home() {
       </section>
 
       <nav className="tabs" aria-label="Workspace views">
-        <button className={tab === "scan" ? "active" : ""} onClick={() => setTab("scan")}>
-          Scan & build
+        <button className={tab === "resume" ? "active" : ""} onClick={() => setTab("resume")}>
+          My resume
         </button>
-        <button className={tab === "library" ? "active" : ""} onClick={() => { setLibraryStatus("loading"); setTab("library"); }}>
-          JD library <span>{hostedPostings.length}</span>
+        <button className={tab === "keywords" ? "active" : ""} onClick={() => { setLibraryStatus("loading"); setTab("keywords"); }}>
+          Keywords <span>{hostedPostings.length}</span>
+        </button>
+        <button className={tab === "review" ? "active" : ""} onClick={() => setTab("review")}>
+          Review
+        </button>
+        <button className={tab === "draft" ? "active" : ""} onClick={() => setTab("draft")}>
+          Tailored draft
         </button>
         <button
           className={tab === "history" ? "active" : ""}
@@ -605,15 +654,15 @@ export default function Home() {
         </button>
       </nav>
 
-      {tab === "scan" ? (
-        <section className="workspace" aria-label="Resume scan workspace">
+      {tab === "resume" || tab === "review" || tab === "draft" ? (
+        <section className={`workspace workspace-${tab}`} aria-label="Resume workspace">
           <aside className="controls-column">
             <div className="panel input-panel">
               <div className="panel-heading">
                 <span>01</span>
                 <div>
                   <p>Source material</p>
-                  <h2>Add your resume and target role</h2>
+                  <h2>{tab === "resume" ? "Your reusable base resume" : tab === "review" ? "Review it against an opportunity" : "Optional, job-specific tailoring"}</h2>
                 </div>
               </div>
 
@@ -633,6 +682,10 @@ export default function Home() {
                 </details>
               ) : null}
 
+              {tab === "resume" ? (
+                <p className="base-resume-note">This is your source of truth. Keep it broad, accurate, and ready for the roles you are targeting. Use Keywords to decide what belongs here.</p>
+              ) : (
+              <div className="role-review-controls">
               <div className="field-label-row">
                 <label htmlFor="job-description">Job description</label>
                 <button className="text-button" onClick={() => { setJobDescription(sampleJobDescription); setHasScanned(false); setSaveStatus("idle"); }}>
@@ -666,7 +719,7 @@ export default function Home() {
                 placeholder="Paste the full job description here…"
               />
               <button className="primary-button" onClick={runScan} disabled={!jobDescription.trim() || isScanning || parseStatus !== "ready"}>
-                {isScanning ? "Comparing language…" : parseStatus === "ready" ? "Run ATS scan" : "Upload resume to scan"}
+                {isScanning ? "Reviewing evidence…" : parseStatus === "ready" ? tab === "draft" ? "Refresh tailored draft" : "Review this opportunity" : "Upload resume to review"}
                 <span aria-hidden="true">→</span>
               </button>
               <p className="demo-note">
@@ -674,15 +727,17 @@ export default function Home() {
                 scan again to refresh the score and highlighted evidence.
               </p>
               {scanError && <p className="save-error" role="alert">{scanError}</p>}
+              </div>
+              )}
             </div>
 
-            {hasScanned ? (
+            {tab !== "resume" && hasScanned ? (
               <div className="panel results-panel" aria-live="polite">
                 <div className="panel-heading compact">
                   <span>02</span>
                   <div>
-                    <p>Scan results</p>
-                    <h2>Where you stand</h2>
+                    <p>{tab === "draft" ? "Tailored draft" : "Review results"}</p>
+                    <h2>{tab === "draft" ? "Changes to verify" : "Evidence, not guesswork"}</h2>
                   </div>
                 </div>
                 <div className="score-grid">
@@ -706,7 +761,7 @@ export default function Home() {
 
                 <div className="suggestion-list">
                   <div className="section-label">
-                    <span>Suggested edits</span>
+                    <span>AI review suggestions</span>
                     <span>{suggestions.length}</span>
                   </div>
                   {suggestions.length ? suggestions.map((suggestion) => {
@@ -750,12 +805,12 @@ export default function Home() {
                   }) : <p className="empty-state">No ready-made suggestions for these gaps yet.</p>}
                 </div>
               </div>
-            ) : (
+            ) : tab !== "resume" ? (
               <div className="panel waiting-panel">
                 <span className="waiting-orbit" aria-hidden="true" />
                 <p>Paste a job description to reveal keyword evidence, credible gaps, and grounded edit suggestions.</p>
               </div>
-            )}
+            ) : null}
           </aside>
 
           <section className="preview-column">
@@ -873,7 +928,7 @@ export default function Home() {
 
                   {resume.summary && (
                     <ResumeSection title="Professional Summary">
-                      <p className="summary-copy"><HighlightedText text={resume.summary} keywords={matchedKeywords} enabled={hasScanned} /></p>
+                      <p className="summary-copy"><HighlightedText text={resume.summary} keywords={matchedKeywords} enabled={scanVisible} /></p>
                     </ResumeSection>
                   )}
 
@@ -881,9 +936,9 @@ export default function Home() {
                     <ResumeSection title="Education">
                       {resume.education.map((item, index) => (
                         <div className="resume-entry" key={`${item.school}-${index}`}>
-                          <div className="resume-line"><strong><HighlightedText text={item.school} keywords={matchedKeywords} enabled={hasScanned} /></strong><span>{item.location}</span></div>
+                          <div className="resume-line"><strong><HighlightedText text={item.school} keywords={matchedKeywords} enabled={scanVisible} /></strong><span>{item.location}</span></div>
                           <div className="resume-line">
-                            <span><HighlightedText text={item.degree} keywords={matchedKeywords} enabled={hasScanned} />{item.gpa && <> · <strong>GPA:</strong> {item.gpa}</>}</span>
+                            <span><HighlightedText text={item.degree} keywords={matchedKeywords} enabled={scanVisible} />{item.gpa && <> · <strong>GPA:</strong> {item.gpa}</>}</span>
                             <span>{item.graduationDate}</span>
                           </div>
                           {item.awards.length > 0 && <div className="education-details"><p><strong>Awards:</strong> {item.awards.join("; ")}</p></div>}
@@ -897,12 +952,12 @@ export default function Home() {
                       {resume.experience.map((role, index) => (
                         <ResumeRole
                           key={`${role.organization}-${role.title}-${index}`}
-                          organization={<HighlightedText text={role.organization} keywords={matchedKeywords} enabled={hasScanned} />}
+                          organization={<HighlightedText text={role.organization} keywords={matchedKeywords} enabled={scanVisible} />}
                           location={role.location}
-                          title={<HighlightedText text={role.title} keywords={matchedKeywords} enabled={hasScanned} />}
+                          title={<HighlightedText text={role.title} keywords={matchedKeywords} enabled={scanVisible} />}
                           date={[role.startDate, role.endDate].filter(Boolean).join(" - ")}
                         >
-                          {role.bullets.map((bullet, bulletIndex) => <li key={bulletIndex}><HighlightedText text={bullet} keywords={matchedKeywords} enabled={hasScanned} /></li>)}
+                          {role.bullets.map((bullet, bulletIndex) => <li key={bulletIndex}><HighlightedText text={bullet} keywords={matchedKeywords} enabled={scanVisible} /></li>)}
                         </ResumeRole>
                       ))}
                     </ResumeSection>
@@ -913,12 +968,12 @@ export default function Home() {
                       {resume.leadership.map((role, index) => (
                         <ResumeRole
                           key={`${role.organization}-${role.title}-${index}`}
-                          organization={<HighlightedText text={role.organization} keywords={matchedKeywords} enabled={hasScanned} />}
+                          organization={<HighlightedText text={role.organization} keywords={matchedKeywords} enabled={scanVisible} />}
                           location={role.location}
-                          title={<HighlightedText text={role.title} keywords={matchedKeywords} enabled={hasScanned} />}
+                          title={<HighlightedText text={role.title} keywords={matchedKeywords} enabled={scanVisible} />}
                           date={[role.startDate, role.endDate].filter(Boolean).join(" - ")}
                         >
-                          {role.bullets.map((bullet, bulletIndex) => <li key={bulletIndex}><HighlightedText text={bullet} keywords={matchedKeywords} enabled={hasScanned} /></li>)}
+                          {role.bullets.map((bullet, bulletIndex) => <li key={bulletIndex}><HighlightedText text={bullet} keywords={matchedKeywords} enabled={scanVisible} /></li>)}
                         </ResumeRole>
                       ))}
                     </ResumeSection>
@@ -927,7 +982,7 @@ export default function Home() {
                   {resume.skills.length > 0 && (
                     <ResumeSection title="Skills & Interests">
                       {resume.skills.map((group) => (
-                        <p className="skill-line" key={group.label}><strong>{group.label}:</strong> <HighlightedText text={group.items.join(", ")} keywords={matchedKeywords} enabled={hasScanned} /></p>
+                        <p className="skill-line" key={group.label}><strong>{group.label}:</strong> <HighlightedText text={group.items.join(", ")} keywords={matchedKeywords} enabled={scanVisible} /></p>
                       ))}
                     </ResumeSection>
                   )}
@@ -935,8 +990,8 @@ export default function Home() {
                   {resume.projects.length > 0 && (
                     <ResumeSection title="Projects">
                       {resume.projects.map((project, index) => (
-                        <ResumeProject key={`${project.name}-${index}`} name={<HighlightedText text={project.name} keywords={matchedKeywords} enabled={hasScanned} />} date={project.date}>
-                          {project.bullets.map((bullet, bulletIndex) => <li key={bulletIndex}><HighlightedText text={bullet} keywords={matchedKeywords} enabled={hasScanned} /></li>)}
+                        <ResumeProject key={`${project.name}-${index}`} name={<HighlightedText text={project.name} keywords={matchedKeywords} enabled={scanVisible} />} date={project.date}>
+                          {project.bullets.map((bullet, bulletIndex) => <li key={bulletIndex}><HighlightedText text={bullet} keywords={matchedKeywords} enabled={scanVisible} /></li>)}
                         </ResumeProject>
                       ))}
                     </ResumeSection>
@@ -944,7 +999,7 @@ export default function Home() {
                 </div>
               </div>
             </div>
-            {hasScanned && (
+            {scanVisible && (
               <div className="preview-legend">
                 <span><i className="legend-hit" /> Green highlights show language already supported by your resume</span>
                 <span><i className="legend-gap" /> Orange suggestion cards require your verification</span>
@@ -952,15 +1007,32 @@ export default function Home() {
             )}
           </section>
         </section>
-      ) : tab === "library" ? (
+      ) : tab === "keywords" ? (
         <section className="library-view">
           <div className="library-intro">
-            <p className="eyebrow">Pattern finder</p>
-            <h2>Learn what your target roles repeatedly ask for.</h2>
-            <p>Every saved job description strengthens a reusable role profile, so you can improve your base resume before the next application appears.</p>
+            <p className="eyebrow">Career keyword library</p>
+            <h2>Learn the top language for each exact job title.</h2>
+            <p>Paste postings before you apply. Repeated terms help you decide what truthful evidence belongs in your reusable base resume.</p>
           </div>
+          <section className="keyword-capture" aria-label="Save a job description for keyword research">
+            <div>
+              <p className="eyebrow">Add a source</p>
+              <h3>Build a job-title keyword profile</h3>
+              <p>This does not review or change your resume. It extracts recurring language from the posting you save.</p>
+            </div>
+            <div className="keyword-capture-fields">
+              <input value={keywordTitle} onChange={(event) => { setKeywordTitle(event.target.value); setKeywordSaveStatus("idle"); }} placeholder="Exact job title, e.g. Business Systems Analyst" />
+              <input value={keywordCompany} onChange={(event) => { setKeywordCompany(event.target.value); setKeywordSaveStatus("idle"); }} placeholder="Company (optional)" />
+              <textarea value={keywordDescription} onChange={(event) => { setKeywordDescription(event.target.value); setKeywordSaveStatus("idle"); }} placeholder="Paste a complete job description (at least a few sentences)…" />
+              <button className="primary-button" type="button" onClick={saveKeywordPosting} disabled={!keywordTitle.trim() || keywordDescription.trim().length < 40 || keywordSaveStatus === "saving"}>
+                {keywordSaveStatus === "saving" ? "Extracting keywords…" : "Save keyword source"}<span aria-hidden="true">→</span>
+              </button>
+              {keywordSaveStatus === "saved" && <p className="keyword-save-status">Saved. Its keywords now count toward this exact title.</p>}
+              {keywordSaveStatus === "error" && <p className="save-error">We couldn’t save this source. Please try again.</p>}
+            </div>
+          </section>
           <div className="library-grid">
-            <aside className="role-list" aria-label="Role categories">
+            <aside className="role-list" aria-label="Saved job titles">
               {roleProfiles.map((profile, index) => (
                 <button className={index === profileIndex ? "active" : ""} key={profile.name} onClick={() => setProfileIndex(index)}>
                   <strong>{profile.name}</strong><span>{profile.subtitle}</span>
@@ -972,13 +1044,13 @@ export default function Home() {
                 <div className="section-label"><span>Your cloud saves</span><span>{hostedPostings.length}</span></div>
                 {libraryStatus === "loading" && <p>Loading your saved scans…</p>}
                 {libraryStatus === "error" && <p>We couldn’t load your saved scans. Please try again.</p>}
-                {libraryStatus === "ready" && !hostedPostings.length && <p>No saved scans yet. Save a result from the Scan & build tab.</p>}
+                {libraryStatus === "ready" && !hostedPostings.length && <p>No keyword sources yet. Add a job description above to start learning patterns.</p>}
                 {deleteError && <p className="delete-error" role="status">{deleteError}</p>}
                 {hostedPostings.slice(0, 5).map((posting) => (
                   <article key={posting.id}>
                     <div className="hosted-save-summary"><strong>{posting.company || "Company not set"}</strong><p>{posting.title} · {new Date(posting.created_at).toLocaleDateString()}</p></div>
                     <div className="hosted-save-actions">
-                      <span>{posting.match_score ?? 0}% match</span>
+                      <span>{posting.match_score === null ? "Keyword source" : `${posting.match_score}% match`}</span>
                       <button
                         className="view-posting-button"
                         type="button"
@@ -1024,8 +1096,8 @@ export default function Home() {
                   </article>
                 ))}
               </div>
-              <button className="profile-action" onClick={() => { setRoleCategory(activeProfile.name); setTab("scan"); }}>
-                Compare this role profile with my resume <span>→</span>
+              <button className="profile-action" onClick={() => { setRoleTitle(activeProfile.name); setTab("review"); }} disabled={!roleProfiles.length}>
+                Review my resume for this title <span>→</span>
               </button>
             </div>
           </div>
@@ -1104,7 +1176,7 @@ export default function Home() {
       )}
 
       <footer>
-        <p><strong>Resume Signal</strong> · Built for careful tailoring, not keyword stuffing.</p>
+        <p><strong>Resume Signal</strong> · Built for credible base resumes, careful reviews, and optional tailoring.</p>
         <p>Your source stays portable and GitHub-ready.</p>
       </footer>
     </main>
