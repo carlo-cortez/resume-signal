@@ -116,7 +116,7 @@ function HighlightedText({ text, keywords, enabled }: { text: string; keywords: 
 }
 
 export default function Home() {
-  const [tab, setTab] = useState<Tab>("resume");
+  const [tab, setTab] = useState<Tab>("keywords");
   const [jobDescription, setJobDescription] = useState("");
   const [resumeFile, setResumeFile] = useState("");
   const [resume, setResume] = useState<Resume>(sampleResume);
@@ -627,11 +627,11 @@ export default function Home() {
       </section>
 
       <nav className="tabs" aria-label="Workspace views">
-        <button className={tab === "resume" ? "active" : ""} onClick={() => setTab("resume")}>
-          My resume
-        </button>
         <button className={tab === "keywords" ? "active" : ""} onClick={() => { setLibraryStatus("loading"); setTab("keywords"); }}>
           Keywords <span>{hostedPostings.length}</span>
+        </button>
+        <button className={tab === "resume" ? "active" : ""} onClick={() => setTab("resume")}>
+          My resume
         </button>
         <button className={tab === "review" ? "active" : ""} onClick={() => setTab("review")}>
           Review
