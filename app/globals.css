@@ -135,7 +135,8 @@ main { width: min(1440px, 100%); margin: 0 auto; min-height: 100vh; }
 .parse-warnings ul { margin: 7px 0 0; padding-left: 18px; }
 .field-label-row { display: flex; justify-content: space-between; align-items: center; margin: 0 2px 8px; }
 .field-label-row label { color: var(--ink-soft); font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .1em; }
-.text-button { padding: 0; border: 0; background: transparent; color: var(--forest); font-size: 11px; font-weight: 700; }
+.field-label-actions { display: flex; gap: 12px; align-items: center; }
+.text-button { padding: 0; border: 0; background: transparent; color: var(--forest); font-size: 11px; font-weight: 700; cursor: pointer; }
 textarea { width: 100%; min-height: 190px; resize: vertical; border: 1px solid var(--line); border-radius: 10px; padding: 13px 14px; color: var(--ink); background: var(--paper); font-size: 13px; line-height: 1.55; }
 textarea::placeholder { color: #9aa39f; }
 textarea:focus { border-color: var(--forest); outline: 3px solid rgba(23,79,63,.08); }
@@ -259,7 +260,7 @@ textarea:focus { border-color: var(--forest); outline: 3px solid rgba(23,79,63,.
 .keyword-capture .eyebrow { margin-bottom: 7px; }
 .keyword-capture h3 { margin: 0; font: 500 23px/1.15 Georgia, serif; }
 .keyword-capture > div > p:last-child { margin: 10px 0 0; color: var(--ink-soft); font-size: 12px; line-height: 1.55; }
-.keyword-capture-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+.keyword-capture-fields { display: grid; grid-template-columns: 1fr auto 1fr; gap: 9px; }
 .keyword-capture-fields input { min-width: 0; height: 40px; border: 1px solid #a8bcaf; border-radius: 8px; padding: 0 11px; color: var(--ink); background: white; font-size: 11px; }
 .keyword-capture-fields textarea, .keyword-capture-fields .primary-button, .keyword-capture-fields .keyword-save-status, .keyword-capture-fields .save-error { grid-column: 1 / -1; }
 .keyword-capture-fields textarea { min-height: 125px; background: white; }

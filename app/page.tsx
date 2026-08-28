@@ -72,11 +72,45 @@ const previewChromeHeight = 180;
 const roleCategoryOptions = [
   "Business Analyst",
   "Systems Analyst",
+  "Data Analyst",
+  "Data Engineer",
+  "Data Scientist",
+  "Business Intelligence Analyst",
   "Product Owner",
+  "Product Manager",
+  "Program Manager",
+  "Project Manager",
   "Project Coordinator",
+  "Scrum Master",
   "Operations Analyst",
-  "Data / Reporting",
+  "Operations Manager",
+  "Process Improvement Analyst",
+  "Management Consultant",
+  "Strategy Analyst",
+  "Financial Analyst",
+  "Risk Analyst",
+  "Compliance Analyst",
+  "Software Engineer",
+  "Frontend Developer",
+  "Backend Developer",
+  "Full-Stack Developer",
+  "DevOps Engineer",
+  "Cloud Engineer",
+  "Solutions Architect",
+  "IT Support / Help Desk",
+  "Systems Administrator",
+  "Network Engineer",
+  "Security Analyst",
+  "UX Designer",
+  "UX Researcher",
+  "UI Designer",
   "QA / UAT Analyst",
+  "Test Engineer",
+  "Data / Reporting",
+  "Technical Writer",
+  "Marketing Analyst",
+  "Supply Chain Analyst",
+  "HR / People Analyst",
 ];
 
 function titleCase(value: string) {
@@ -144,6 +178,7 @@ export default function Home() {
   const [keywordTitle, setKeywordTitle] = useState("");
   const [keywordCompany, setKeywordCompany] = useState("");
   const [keywordDescription, setKeywordDescription] = useState("");
+  const [keywordCategory, setKeywordCategory] = useState("");
   const [keywordSaveStatus, setKeywordSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [savedResumes, setSavedResumes] = useState<SavedResume[]>([]);
   const [resumeVersions, setResumeVersions] = useState<ResumeVersion[]>([]);
@@ -228,7 +263,8 @@ export default function Home() {
   ].filter(Boolean).join(" • ");
 
   useEffect(() => {
-    if (tab !== "keywords") return;
+    if (tab !== "keywords" && tab !== "review" && tab !== "draft") return;
+    if (hostedPostings.length && libraryStatus === "ready") return;
     fetch("/api/job-descriptions")
       .then(async (response) => {
         if (!response.ok) throw new Error("Database unavailable");
@@ -417,7 +453,7 @@ export default function Home() {
         body: JSON.stringify({
           company: keywordCompany,
           title: keywordTitle,
-          roleCategory: keywordTitle,
+          roleCategory: keywordCategory.trim() || keywordTitle,
           rawText: keywordDescription,
           keywords: [],
           matchScore: null,
@@ -428,6 +464,7 @@ export default function Home() {
       setHostedPostings((current) => [saved, ...current]);
       setKeywordDescription("");
       setKeywordCompany("");
+      setKeywordCategory("");
       setKeywordSaveStatus("saved");
     } catch {
       setKeywordSaveStatus("error");
@@ -692,6 +729,33 @@ export default function Home() {
                   Use sample
                 </button>
               </div>
+              {hostedPostings.length > 0 && (
+                <div className="metadata-row" style={{ marginBottom: 9 }}>
+                  <label style={{ gridColumn: "1 / -1" }}>
+                    <span>Load from saved</span>
+                    <select
+                      value=""
+                      onChange={(event) => {
+                        const posting = hostedPostings.find((p) => p.id === event.target.value);
+                        if (!posting) return;
+                        setJobDescription(posting.raw_text);
+                        setCompany(posting.company || "");
+                        setRoleTitle(posting.title);
+                        setRoleCategory(posting.role_category || "Business Analyst");
+                        setHasScanned(false);
+                        setSaveStatus("idle");
+                      }}
+                    >
+                      <option value="" disabled>Choose a saved job description…</option>
+                      {hostedPostings.map((posting) => (
+                        <option key={posting.id} value={posting.id}>
+                          {posting.title}{posting.company ? ` — ${posting.company}` : ""}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
+              )}
               <div className="metadata-row">
                 <label>
                   <span>Company</span>
@@ -1021,7 +1085,11 @@ export default function Home() {
               <p>This does not review or change your resume. It extracts recurring language from the posting you save.</p>
             </div>
             <div className="keyword-capture-fields">
-              <input value={keywordTitle} onChange={(event) => { setKeywordTitle(event.target.value); setKeywordSaveStatus("idle"); }} placeholder="Exact job title, e.g. Business Systems Analyst" />
+              <input value={keywordTitle} onChange={(event) => { setKeywordTitle(event.target.value); setKeywordSaveStatus("idle"); }} placeholder="Exact job title, e.g. Systems Analyst" />
+              <input value={keywordCategory} onChange={(event) => { setKeywordCategory(event.target.value); setKeywordSaveStatus("idle"); }} list="keyword-category-options" placeholder="Job category, e.g. Business Analyst" />
+              <datalist id="keyword-category-options">
+                {roleCategoryOptions.map((category) => <option key={category} value={category} />)}
+              </datalist>
               <input value={keywordCompany} onChange={(event) => { setKeywordCompany(event.target.value); setKeywordSaveStatus("idle"); }} placeholder="Company (optional)" />
               <textarea value={keywordDescription} onChange={(event) => { setKeywordDescription(event.target.value); setKeywordSaveStatus("idle"); }} placeholder="Paste a complete job description (at least a few sentences)…" />
               <button className="primary-button" type="button" onClick={saveKeywordPosting} disabled={!keywordTitle.trim() || keywordDescription.trim().length < 40 || keywordSaveStatus === "saving"}>
