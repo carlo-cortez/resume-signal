@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { apiError } from "@/lib/api/errors";
+import { consumeUserRateLimit, rateLimitMessage } from "@/lib/api/rate-limit";
 import { historyQuerySchema, scanRequestSchema, uuidQuerySchema } from "@/lib/api/schemas";
 import { analyzeResume, normalizeStoredSuggestion } from "@/lib/resume/analysis";
 import { createGroundedSuggestions } from "@/lib/resume/openai";
@@ -43,6 +44,13 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   const { supabase, userId } = await authenticatedSupabase();
   if (!userId) return apiError("UNAUTHORIZED", "Please sign in to continue.", 401);
+
+  const rateLimit = await consumeUserRateLimit(supabase, "resume_scan");
+  if (!rateLimit.allowed) {
+    return apiError("RATE_LIMITED", rateLimitMessage("resume_scan", rateLimit.retryAfterSeconds), 429, {
+      "retry-after": String(rateLimit.retryAfterSeconds),
+    });
+  }
 
   try {
     const parsed = scanRequestSchema.safeParse(await request.json().catch(() => null));

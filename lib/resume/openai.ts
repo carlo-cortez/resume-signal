@@ -2,6 +2,8 @@ import "server-only";
 
 import OpenAI from "openai";
 import { zodTextFormat } from "openai/helpers/zod";
+import { getSupabaseAdmin } from "@/db/supabase";
+import { consumeGlobalRateLimit } from "@/lib/api/rate-limit";
 import { findJobEvidence } from "@/lib/resume/analysis";
 import { resumeSchema, suggestionSchema } from "@/lib/resume/schema";
 import { getResumePathLabel, getResumeValue, resumeToText } from "@/lib/resume/text";
@@ -9,6 +11,8 @@ import type { Resume, ResumeSuggestion } from "@/types/resume";
 
 const GROQ_BASE_URL = "https://api.groq.com/openai/v1";
 const DEFAULT_GROQ_MODEL = "openai/gpt-oss-20b";
+const MAX_AI_RESUME_CHARACTERS = 30_000;
+const MAX_AI_JOB_DESCRIPTION_CHARACTERS = 20_000;
 
 function client() {
   const apiKey = process.env.GROQ_API_KEY?.trim();
@@ -19,9 +23,22 @@ function model() {
   return process.env.GROQ_MODEL?.trim() || DEFAULT_GROQ_MODEL;
 }
 
+// Shared daily budget across all users, so this app cannot exhaust the Groq
+// account's quota for other projects. When it is spent, callers return null
+// and the routes fall back to deterministic analysis.
+async function hasGroqBudget() {
+  try {
+    const { allowed } = await consumeGlobalRateLimit(getSupabaseAdmin(), "groq_requests");
+    return allowed;
+  } catch (error) {
+    console.error("Groq budget check unavailable:", error);
+    return false;
+  }
+}
+
 export async function structureResumeWithAI(text: string) {
   const openai = client();
-  if (!openai) return null;
+  if (!openai || !(await hasGroqBudget())) return null;
   const response = await openai.responses.parse({
     model: model(),
     reasoning: { effort: "low" },
@@ -30,7 +47,7 @@ export async function structureResumeWithAI(text: string) {
         role: "system",
         content: "Extract only facts explicitly present in the resume. Use empty strings and empty arrays for missing values. Do not rewrite, improve, infer, or invent content.",
       },
-      { role: "user", content: text.slice(0, 80_000) },
+      { role: "user", content: text.slice(0, MAX_AI_RESUME_CHARACTERS) },
     ],
     text: { format: zodTextFormat(resumeSchema, "resume") },
   });
@@ -39,7 +56,7 @@ export async function structureResumeWithAI(text: string) {
 
 export async function createGroundedSuggestions(resume: Resume, jobDescription: string, missingKeywords: string[]) {
   const openai = client();
-  if (!openai || !missingKeywords.length) return null;
+  if (!openai || !missingKeywords.length || !(await hasGroqBudget())) return null;
   const response = await openai.responses.parse({
     model: model(),
     reasoning: { effort: "low" },
@@ -56,7 +73,7 @@ export async function createGroundedSuggestions(resume: Resume, jobDescription: 
       },
       {
         role: "user",
-        content: `RESUME:\n${resumeToText(resume)}\n\nJOB DESCRIPTION:\n${jobDescription.slice(0, 40_000)}\n\nMISSING KEYWORDS:\n${missingKeywords.join(", ")}`,
+        content: `RESUME:\n${resumeToText(resume)}\n\nJOB DESCRIPTION:\n${jobDescription.slice(0, MAX_AI_JOB_DESCRIPTION_CHARACTERS)}\n\nMISSING KEYWORDS:\n${missingKeywords.join(", ")}`,
       },
     ],
     text: { format: zodTextFormat(suggestionSchema, "resume_suggestions") },
