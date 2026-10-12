@@ -2,6 +2,9 @@ import mammoth from "mammoth";
 import type { ParseQuality, Resume, ResumeProject, ResumeRole } from "@/types/resume";
 
 export const MAX_RESUME_BYTES = 5 * 1024 * 1024;
+export const MAX_RESUME_PAGES = 20;
+export const MAX_RESUME_CHARACTERS = 100_000;
+export const MAX_DOCX_UNCOMPRESSED_BYTES = 50 * 1024 * 1024;
 const sectionAliases: Array<{ canonical: string; pattern: RegExp }> = [
   { canonical: "summary", pattern: /^(?:(?:professional|career|executive) )?(?:summary|profile|objective)$/i },
   { canonical: "education", pattern: /^(?:education|academic background|academic history|qualifications)$/i },
@@ -28,20 +31,55 @@ function cleanLines(text: string) {
 
 async function extractPdf(buffer: Buffer) {
   const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
-  const document = await pdfjs.getDocument({
+  const loadingTask = pdfjs.getDocument({
     data: new Uint8Array(buffer),
     disableFontFace: true,
     useSystemFonts: true,
-  }).promise;
-  const pages: string[] = [];
-  for (let index = 1; index <= document.numPages; index += 1) {
-    const page = await document.getPage(index);
-    const content = await page.getTextContent();
-    pages.push(content.items.map((item) => (
-      "str" in item ? `${item.str}${item.hasEOL ? "\n" : " "}` : ""
-    )).join(""));
+  });
+  try {
+    const document = await loadingTask.promise;
+    if (document.numPages > MAX_RESUME_PAGES) {
+      throw new Error(`Resume PDFs must be ${MAX_RESUME_PAGES} pages or fewer.`);
+    }
+    const pages: string[] = [];
+    let characterCount = 0;
+    for (let index = 1; index <= document.numPages; index += 1) {
+      const page = await document.getPage(index);
+      const content = await page.getTextContent();
+      const pageText = content.items.map((item) => (
+        "str" in item ? `${item.str}${item.hasEOL ? "\n" : " "}` : ""
+      )).join("");
+      characterCount += pageText.length;
+      if (characterCount > MAX_RESUME_CHARACTERS) {
+        throw new Error("This resume contains more text than we can analyze.");
+      }
+      pages.push(pageText);
+    }
+    return pages.join("\n");
+  } finally {
+    await loadingTask.destroy();
   }
-  return pages.join("\n");
+}
+
+// Sums the uncompressed sizes declared in a ZIP central directory so a DOCX
+// zip bomb is rejected before mammoth inflates it.
+function declaredZipUncompressedBytes(buffer: Buffer) {
+  const endOfDirectory = buffer.lastIndexOf(Buffer.from([0x50, 0x4b, 0x05, 0x06]));
+  if (endOfDirectory < 0 || endOfDirectory + 22 > buffer.length) return Infinity;
+  const entryCount = buffer.readUInt16LE(endOfDirectory + 10);
+  let offset = buffer.readUInt32LE(endOfDirectory + 16);
+  let total = 0;
+  for (let entry = 0; entry < entryCount; entry += 1) {
+    if (offset + 46 > buffer.length || buffer.readUInt32LE(offset) !== 0x02014b50) return Infinity;
+    const uncompressedSize = buffer.readUInt32LE(offset + 24);
+    if (uncompressedSize === 0xffffffff) return Infinity;
+    total += uncompressedSize;
+    offset += 46
+      + buffer.readUInt16LE(offset + 28)
+      + buffer.readUInt16LE(offset + 30)
+      + buffer.readUInt16LE(offset + 32);
+  }
+  return total;
 }
 
 export async function extractResumeText(file: File) {
@@ -54,7 +92,13 @@ export async function extractResumeText(file: File) {
     return (await extractPdf(buffer)).trim();
   }
   if (buffer.subarray(0, 2).toString() !== "PK") throw new Error("This file is not a valid DOCX.");
+  if (declaredZipUncompressedBytes(buffer) > MAX_DOCX_UNCOMPRESSED_BYTES) {
+    throw new Error("This DOCX file is too large to analyze.");
+  }
   const result = await mammoth.extractRawText({ buffer });
+  if (result.value.length > MAX_RESUME_CHARACTERS) {
+    throw new Error("This resume contains more text than we can analyze.");
+  }
   return result.value.trim();
 }
 
