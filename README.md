@@ -38,7 +38,8 @@ Open `http://localhost:3000/login` and continue with Google. The first successfu
 - `app/globals.css` contains the visual system and responsive layout.
 - `app/api/job-descriptions/route.ts` is the server-only JD library API.
 - `lib/supabase/` owns cookie-session clients and route protection.
-- `db/supabase.ts` is the server-only administrative client; normal user requests do not use it.
+- `db/supabase.ts` is the server-only administrative client. Its only request-time use is consuming the shared AI request budget; it never reads or writes user data.
+- `lib/api/rate-limit.ts` holds the per-user and app-wide request limits.
 - `supabase/migrations/` contains the hosted database schema.
 - `lib/resume/` contains validated parsing, scoring, semantic analysis, and DOCX export.
 - `types/resume.ts` is the shared résumé and scoring contract.
@@ -58,6 +59,7 @@ Open `http://localhost:3000/login` and continue with Google. The first successfu
 - Restorable resume-version history and reopenable/deletable scan history
 - Google-only sign-in and automatic first-time account creation, plus sign-out
 - Per-user database ownership enforced by Row Level Security
+- Per-user rate limits on résumé uploads and scans, plus an app-wide daily AI request budget that falls back to deterministic analysis when spent
 - Responsive desktop and mobile layouts
 
 ## Security model
@@ -69,6 +71,18 @@ Open `http://localhost:3000/login` and continue with Google. The first successfu
 - Structured resume versions are stored, but uploaded files and extracted raw text are discarded after parsing.
 - Anonymous requests receive no table access.
 - JD reads and writes go through an authenticated Next.js server route using the current user session.
+- Rate-limit counters are written only through security-definer functions. Users can increment only their own counters; the shared AI budget function is callable only with the server secret key.
+- Every response carries a Content Security Policy, `X-Frame-Options: DENY`, `nosniff`, `Referrer-Policy`, and `Permissions-Policy`.
+
+## Rate limits
+
+| Limit | Default | Scope |
+| --- | --- | --- |
+| Résumé uploads (`/api/resumes/parse`) | 10 per hour | per user |
+| Scans (`/api/scans` POST) | 30 per hour | per user |
+| Groq requests | 300 per day | whole app |
+
+Change the numbers in `lib/api/rate-limit.ts`. Requests over a per-user limit return `429` with a `Retry-After` header. When the daily Groq budget is spent, parsing and scans keep working with deterministic analysis, so this app cannot exhaust a Groq account shared with other projects. Per-user limits fail open if the database check is unavailable; the Groq budget fails closed. Limits are enforced only after `20261012000000_add_rate_limits.sql` is applied, and the Groq budget requires `SUPABASE_SECRET_KEY` on the server.
 
 ## Finish hosted setup
 
@@ -77,7 +91,8 @@ Open `http://localhost:3000/login` and continue with Google. The first successfu
 3. After that verification, apply `20260728010000_drop_resume_source_text.sql` to remove the deprecated field. Existing projects should not combine these two privacy phases into one unattended push.
 4. Optionally add `GROQ_API_KEY` for Groq-hosted semantic structuring and suggestions; deterministic analysis works without it.
 5. Configure the production Google OAuth origin, Supabase callback, consent-screen branding, and deployment redirect URL before opening access publicly.
-6. Add monitoring, rate limiting, backups, and a production domain during deployment.
+6. Apply `20261012000000_add_rate_limits.sql` to enable request limits, and set a spending limit in the Groq console.
+7. Add monitoring, backups, and a production domain during deployment.
 
 ## Portability
 

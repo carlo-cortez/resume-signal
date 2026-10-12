@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { apiError } from "@/lib/api/errors";
+import { consumeUserRateLimit, rateLimitMessage } from "@/lib/api/rate-limit";
 import { authenticatedSupabase } from "@/lib/supabase/auth";
 import { assessResumeQuality, extractResumeText, parseResumeWithQuality } from "@/lib/resume/parser";
 import { structureResumeWithAI } from "@/lib/resume/openai";
@@ -9,6 +10,13 @@ export const runtime = "nodejs";
 export async function POST(request: Request) {
   const { supabase, userId } = await authenticatedSupabase();
   if (!userId) return apiError("UNAUTHORIZED", "Please sign in to continue.", 401);
+
+  const rateLimit = await consumeUserRateLimit(supabase, "resume_parse");
+  if (!rateLimit.allowed) {
+    return apiError("RATE_LIMITED", rateLimitMessage("resume_parse", rateLimit.retryAfterSeconds), 429, {
+      "retry-after": String(rateLimit.retryAfterSeconds),
+    });
+  }
 
   try {
     const form = await request.formData();
